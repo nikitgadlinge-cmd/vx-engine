@@ -41,4 +41,4 @@ Project structure
 ├── package.json
 ├── vite.config.js
 └── vercel.json
-```
+```trigger deploy
