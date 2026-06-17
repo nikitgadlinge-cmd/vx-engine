@@ -320,9 +320,18 @@ Required top-level keys and shapes:
           messages: [{ role: "user", content: `Generate the brief for:\n${userMessage}` }],
         }),
       });
-      const data = await res.json();
+      const rawText = await res.text();
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        throw new Error(`Unexpected response (HTTP ${res.status}). The /api/messages function returned non-JSON: ${rawText.slice(0, 200)}`);
+      }
 
-      if (data.error) throw new Error(`API error: ${data.error.message}`);
+      if (!res.ok || data.error) {
+        const msg = data?.error?.message || data?.message || rawText.slice(0, 200) || `HTTP ${res.status}`;
+        throw new Error(`API error (HTTP ${res.status}): ${msg}`);
+      }
 
       const raw = (data.content || []).map(b => b.text || "").join("");
       if (!raw) throw new Error("Empty response from API");
@@ -430,9 +439,18 @@ Required JSON shape:
           }],
         }),
       });
-      const data = await res.json();
+      const rawText = await res.text();
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        throw new Error(`Unexpected response (HTTP ${res.status}). The /api/messages function returned non-JSON: ${rawText.slice(0, 200)}`);
+      }
 
-      if (data.error) throw new Error(`API error: ${data.error.message}`);
+      if (!res.ok || data.error) {
+        const msg = data?.error?.message || data?.message || rawText.slice(0, 200) || `HTTP ${res.status}`;
+        throw new Error(`API error (HTTP ${res.status}): ${msg}`);
+      }
 
       const raw = (data.content || []).map(b => b.type === "text" ? b.text : "").filter(Boolean).join("");
       if (!raw) throw new Error("Empty response from API");
@@ -563,7 +581,7 @@ Required JSON shape:
           throw new Error(`HTTP ${res.status}${txt ? ` — ${txt.slice(0, 200)}` : ""}`);
         }
         const data = await res.json();
-        if (data.error) throw new Error(`API error: ${data.error.message}`);
+        if (data.error) throw new Error(`API error: ${data?.error?.message || JSON.stringify(data.error).slice(0, 200)}`);
         const raw = (data.content || []).map(b => b.type === "text" ? b.text : (b.text || "")).filter(Boolean).join("");
         if (!raw) throw new Error("Empty response from API");
         const firstB = raw.indexOf("{"); const lastB = raw.lastIndexOf("}");
