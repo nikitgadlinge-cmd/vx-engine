@@ -3,7 +3,9 @@ export default async function handler(req, res) {
     const { message } = req.body;
 
     if (!process.env.GROQ_API_KEY) {
-      return res.status(500).json({ error: "Missing GROQ_API_KEY" });
+      return res.status(200).json({
+        reply: "⚠️ Missing API key. Please configure GROQ_API_KEY."
+      });
     }
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -25,32 +27,20 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    // 🔍 DEBUG (helps understand what is happening)
-    console.log("Groq Raw Response:", JSON.stringify(data, null, 2));
+    // ✅ HARD FAIL SAFE
+    let reply = "⚠️ AI could not generate response.";
 
-    // ✅ Handle errors from Groq
-    if (data.error) {
-      return res.status(500).json({
-        error: data.error.message || "Groq API error"
-      });
-    }
-
-    // ✅ Extract response safely
-    const reply =
-      data?.choices?.[0]?.message?.content ||
-      data?.choices?.[0]?.text ||
-      null;
-
-    if (!reply) {
-      return res.status(500).json({
-        error: "Empty response from AI",
-        fullResponse: data
-      });
+    if (data && data.choices && data.choices.length > 0) {
+      reply = data.choices[0].message?.content || reply;
+    } else if (data?.error?.message) {
+      reply = `⚠️ Groq Error: ${data.error.message}`;
     }
 
     res.status(200).json({ reply });
 
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(200).json({
+      reply: `⚠️ Server error: ${error.message}`
+    });
   }
 }
