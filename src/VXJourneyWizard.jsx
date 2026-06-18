@@ -311,16 +311,13 @@ Required top-level keys and shapes:
 
     try {
       const res = await fetch("/api/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 8000,
-          system: systemPrompt,
-          messages: [{ role: "user", content: `Generate the brief for:\n${userMessage}` }],
-        }),
-      });
-      const rawText = await res.text();
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    message: `Generate the brief for:\n${userMessage}`
+  }),
+});
+const rawText = await res.text();
       let data;
       try {
         data = JSON.parse(rawText);
