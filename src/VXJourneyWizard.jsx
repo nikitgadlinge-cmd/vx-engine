@@ -1,4 +1,14 @@
 import { useState, useEffect, useRef } from "react";
+import {
+  buildSampleBrief,
+  buildSampleBenchmark,
+  buildSamplePersonaLongList,
+  buildSampleFullPersonas,
+  buildSampleJourneys,
+} from "./sampleData.js";
+
+const FAKE_DELAY = 1400; // ms — short "Generating…" pause so it feels real
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const steps = [
   { id: 0, label: "Welcome", icon: "◈" },
@@ -310,46 +320,45 @@ Required top-level keys and shapes:
     });
 
     try {
-      const res = await fetch("/api/messages", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    message: `Generate the brief for:\n${userMessage}`
-  }),
-});
-const rawText = await res.text();
-      let data;
-      try {
-        data = JSON.parse(rawText);
-      } catch {
-        throw new Error(`Unexpected response (HTTP ${res.status}). The /api/messages function returned non-JSON: ${rawText.slice(0, 200)}`);
-      }
-
-      if (!res.ok || data.error) {
-        const msg = data?.error?.message || data?.message || rawText.slice(0, 200) || `HTTP ${res.status}`;
-        throw new Error(`API error (HTTP ${res.status}): ${msg}`);
-      }
-
-      const raw = (data.content || []).map(b => b.text || "").join("");
-      if (!raw) throw new Error("Empty response from API");
-
-      // Extract outermost JSON object
-      const firstBrace = raw.indexOf("{");
-      const lastBrace = raw.lastIndexOf("}");
-      if (firstBrace === -1 || lastBrace === -1) throw new Error(`No JSON found. Response: ${raw.slice(0, 300)}`);
-      const jsonStr = raw.slice(firstBrace, lastBrace + 1);
-
-      let parsed;
-      try {
-        parsed = JSON.parse(jsonStr);
-      } catch (parseErr) {
-        // If truncated, try to recover partial JSON by finding last valid closing brace
-        throw new Error(`Truncated response (${jsonStr.length} chars). Try again — the model output was too long.`);
-      }
+      await wait(FAKE_DELAY);
+      const pfList = PHYSICAL_FEATURES
+        .filter(f => physicalFeatures[f].present)
+        .map(f => ({ name: f, present: physicalFeatures[f].present, quality: physicalFeatures[f].quality || "Not assessed", priority: physicalFeatures[f].priority || "Not set" }));
+      const parsed = buildSampleBrief({
+        sectorId: selectedSector?.id,
+        sector: selectedSector?.label,
+        subType: selectedSubtype,
+        purpose: expPurpose,
+        volume: expVisitorVolume,
+        footprint: expFootprint,
+        theme: expTheme,
+        tones: expTones,
+        physicalFeatures: pfList,
+        ticketingType: ocTicketingType,
+        pricing: ocPricing,
+        entryTech: ocEntryTech,
+        outsideFood: ocOutsideFood,
+        reEntry: ocReEntry,
+        medPolicy: ocMedPolicy,
+        phones: ocPhonesPermitted,
+        restrictedZones: ocRestrictedZones,
+        screening: ocScreeningTech,
+        hseRisk: ocHseRisk,
+        hseEvac: ocHseEvac,
+        tiers: shTiers,
+        nationalities: shNationalities,
+        primaryLang: shPrimaryLang,
+        secondaryLang: shSecondaryLang,
+        religious: shReligious,
+        motivations: Object.entries(motivations).filter(([, v]) => v).map(([k, v]) => ({ name: k, priority: v })),
+        outcomes: Object.entries(outcomes).filter(([, v]) => v.rank || v.priority).map(([k, v]) => ({ name: k, rank: v.rank, priority: v.priority })),
+        primaryTemplate: primaryTemplate ? TEMPLATES_LABEL[primaryTemplate] : null,
+        secondaryTemplate: secondaryTemplate ? TEMPLATES_LABEL[secondaryTemplate] : null,
+      });
 
       setBriefData(parsed);
       setBriefOpenSections(Object.fromEntries(Object.keys(parsed).map((k, i) => [k, i === 0])));
-      setAiOutput(raw);
+      setAiOutput(JSON.stringify(parsed, null, 2));
     } catch (err) {
       setAiError(err.message);
       console.error("Brief generation error:", err);
@@ -422,47 +431,8 @@ Required JSON shape:
     };
 
     try {
-      const res = await fetch("/api/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 8000,
-          system: systemPrompt,
-          tools: [{ type: "web_search_20250305", name: "web_search" }],
-          messages: [{
-            role: "user",
-            content: `Sector: ${sector}\nTop 3 outcomes: ${top3.join(", ") || "Not specified"}\n\nBrief summary:\n${JSON.stringify(briefSummary)}\n\nGenerate the Benchmark Insight Layer now.`
-          }],
-        }),
-      });
-      const rawText = await res.text();
-      let data;
-      try {
-        data = JSON.parse(rawText);
-      } catch {
-        throw new Error(`Unexpected response (HTTP ${res.status}). The /api/messages function returned non-JSON: ${rawText.slice(0, 200)}`);
-      }
-
-      if (!res.ok || data.error) {
-        const msg = data?.error?.message || data?.message || rawText.slice(0, 200) || `HTTP ${res.status}`;
-        throw new Error(`API error (HTTP ${res.status}): ${msg}`);
-      }
-
-      const raw = (data.content || []).map(b => b.type === "text" ? b.text : "").filter(Boolean).join("");
-      if (!raw) throw new Error("Empty response from API");
-
-      const firstBrace = raw.indexOf("{");
-      const lastBrace = raw.lastIndexOf("}");
-      if (firstBrace === -1 || lastBrace === -1) throw new Error(`No JSON found in response. Preview: ${raw.slice(0, 200)}`);
-      const jsonStr = raw.slice(firstBrace, lastBrace + 1);
-
-      let parsed;
-      try {
-        parsed = JSON.parse(jsonStr);
-      } catch (parseErr) {
-        throw new Error(`JSON truncated or malformed (${jsonStr.length} chars). Please try again.`);
-      }
+      await wait(FAKE_DELAY);
+      const parsed = buildSampleBenchmark({ sectorId: briefData?.sector_context?.sector_id || selectedSector?.id, sector, top3 });
 
       setBenchmarkData(parsed);
       setActiveBenchmarkCategory(BENCHMARK_CATEGORIES[0].key);
@@ -638,10 +608,8 @@ Required JSON shape:
 }`;
 
     try {
-      const parsed = await callClaude({
-        system: systemPrompt,
-        user: `Stage 1 + Stage 2 context:\n${JSON.stringify(buildUpstreamContext())}\n\nGenerate the persona long list now.`,
-      });
+      await wait(FAKE_DELAY);
+      const parsed = buildSamplePersonaLongList({ sectorId: briefData?.sector_context?.sector_id || selectedSector?.id, sector: briefData?.sector_context?.sector || selectedSector?.label });
       setPersonaData(parsed);
       // seed selections from recommended defaults
       const seed = {};
@@ -717,11 +685,8 @@ Required JSON shape:
     };
 
     try {
-      const parsed = await callClaude({
-        system: systemPrompt,
-        user: `Generate full persona cards, comparison matrix and coverage validation for:\n${JSON.stringify(payload)}`,
-        maxTokens: 8000,
-      });
+      await wait(FAKE_DELAY);
+      const parsed = buildSampleFullPersonas(payload.selected_personas, briefData?.sector_context?.sector_id || selectedSector?.id);
       setFullPersonas(parsed);
       const cards = {};
       (parsed.personas || []).forEach((p, i) => { cards[p.id] = i === 0; });
@@ -839,12 +804,8 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
     };
 
     try {
-      const parsed = await callClaude({
-        system: systemPrompt,
-        user: `Build the per-persona journeys, Moments of Truth and KPI frameworks for:\n${JSON.stringify(payload)}`,
-        maxTokens: 8000,
-        timeoutMs: 150000,
-      });
+      await wait(FAKE_DELAY);
+      const parsed = buildSampleJourneys(fullPersonas.personas, payload.template_used, briefData?.sector_context?.sector_id || selectedSector?.id);
       setJourneyData(parsed);
       const first = parsed.journeys?.[0]?.persona_id || null;
       setActiveJourneyPersona(first);
