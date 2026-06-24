@@ -1,10 +1,10 @@
 /* ============================================================
-   VX Journey Engine — VISUAL POLISH LAYER
-   Loaded after the component's own styles, so these refine
-   the look: premium typography, richer colour, depth & spacing.
+   VX Journey Engine — VISUAL POLISH LAYER (v2)
+   Loaded after the component styles. Fixes font uniformity,
+   removes leftover lime/dark theme, adds depth, spacing & icons.
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@600;700;800&display=swap');
 
 :root {
   --vx-indigo: #4F46E5;
@@ -15,7 +15,6 @@
   --vx-slate: #475569;
   --vx-mute: #64748B;
   --vx-line: #E6E8F0;
-  --vx-bg: #F4F5FB;
   --vx-card: #FFFFFF;
   --vx-shadow-sm: 0 1px 3px rgba(30,27,58,0.06), 0 1px 2px rgba(30,27,58,0.04);
   --vx-shadow-md: 0 6px 20px rgba(30,27,58,0.08), 0 2px 6px rgba(30,27,58,0.05);
@@ -25,129 +24,123 @@
 * { box-sizing: border-box; }
 
 html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  margin: 0; padding: 0; width: 100%; min-height: 100vh;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
   background: linear-gradient(160deg, #EEF0FA 0%, #F4F5FB 45%, #F7F5FC 100%);
 }
-
 #root { width: 100%; min-height: 100vh; }
 
-/* ---- 1. TYPOGRAPHY: body becomes clean sans, headings stay characterful ---- */
-body, input, textarea, select, button,
-.vx-shell, .vx-main, .vx-sidebar,
-.bm-v, .bo-v, .rv-val, .px-attr-list li, .jm-tp-v, .jm-kpi-def,
-.ed-stage-objective, .ed-dash-sub, .vx-welcome-desc, .vx-placeholder-body,
-.sh-tier-def, .ts-card-simple, .jm-kpi-mk strong, .bm-card-institution {
+/* ====================================================================
+   1. FONT UNIFORMITY — everything sans (Inter); only display = Syne.
+   Broad selectors + !important so NOTHING falls back to the old mono.
+   ==================================================================== */
+html body, html body * {
   font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif !important;
-  letter-spacing: 0 !important;
 }
-
-/* Labels/eyebrows: keep them refined, slightly spaced, never mono */
+/* Display headings only */
+.ed-dash-title, .vx-welcome-title, .vx-placeholder-title, .ed-active-name,
+.bm-title, .bo-title, .ed-stage-name, .vx-logo, .rv-heading, .ts-card-name,
+.sh-panel-title, .sh-fields-title, .bm-card-title,
+.rv-generate-btn, .bm-trigger-btn, .vx-begin-btn, .vx-btn-primary,
+.jm-export-btn.primary, .vx-nav-btn.next {
+  font-family: 'Syne', sans-serif !important;
+  letter-spacing: -0.01em !important;
+}
+/* Labels / eyebrows — uniform weight & spacing */
 .bm-k, .bo-k, .rv-key, .px-attr-k, .jm-score-k, .bm-meta-k,
 .oc-field-label, .sh-field-label, .ec-label, .vx-welcome-eyebrow,
 .vx-placeholder-eyebrow, .ed-eyebrow, .bm-eyebrow, .bo-eyebrow,
 .jm-kpi-mk span, .ed-stage-num, .ed-active-label, .jm-export-label,
-.px-bulk-label, .sector-label {
-  font-family: 'Inter', sans-serif !important;
-  letter-spacing: 0.06em !important;
+.px-bulk-label, .sector-label, .vx-progress-step-label {
+  letter-spacing: 0.07em !important;
   text-transform: uppercase;
   font-weight: 600 !important;
 }
-
-/* Big display headings: characterful Syne */
-.ed-dash-title, .vx-welcome-title, .vx-placeholder-title,
-.ed-active-name, .bm-title, .bo-title, .ed-stage-name,
-.vx-logo, .rv-heading, .ts-card-name, .sh-panel-title,
-.sh-fields-title, .bm-card-title {
-  font-family: 'Syne', sans-serif !important;
-  letter-spacing: -0.01em !important;
+/* Inputs/dropdowns/options — consistent size & family */
+input, textarea, select, option,
+.ec-input, .ec-select, .oc-select, .oc-number, .sh-input {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 14px !important;
+  color: #1F2937 !important;
+}
+/* Body copy consistent size */
+.vx-placeholder-body, .ed-dash-sub, .vx-welcome-desc, .ed-stage-objective,
+.sh-tier-def, .ts-card-simple, .bm-v, .bo-v, .rv-val, .jm-tp-v {
+  font-size: 14px !important; line-height: 1.6 !important;
 }
 
-/* ---- 2. COLOUR: retire the leftover lime; commit to indigo→violet ---- */
-/* The old acid-green accent on a light bg looks flat — replace everywhere. */
-[style*="C8F04A"] { /* inline lime usages get neutralised by overrides below where possible */ }
+/* ====================================================================
+   2. KILL THE OLD DARK/LIME THEME (topbar strip, sidebar, progress)
+   ==================================================================== */
+.vx-progress-wrap {
+  background: linear-gradient(120deg, #FBFBFE 0%, #F1F1FC 100%) !important;
+  border-bottom: 1px solid var(--vx-line) !important;
+  padding: 10px 18px !important;
+}
+.vx-progress-step-label { color: var(--vx-mute) !important; }
+.vx-progress-step-label strong { color: var(--vx-indigo) !important; }
+.vx-progress-track { background: #E4E6F2 !important; height: 6px !important; border-radius: 999px !important; }
+.vx-progress-fill {
+  background: linear-gradient(90deg, #6D28D9, #4F46E5) !important;
+  box-shadow: none !important; border-radius: 999px !important;
+}
+.vx-progress-pct { color: var(--vx-indigo) !important; font-weight: 700 !important; }
 
+/* Sidebar checks/labels/numbers → indigo & green, never lime */
+.vx-step-item.active .step-label, .vx-step-item.active .step-num { color: var(--vx-indigo) !important; }
+.vx-step-item.done .step-label { color: #16A34A !important; }
+.vx-step-item.done .step-num, .vx-step-item.done .step-check { color: #16A34A !important; }
+.vx-step-item.active { background: #EEF0FF !important; border-left: 3px solid var(--vx-indigo) !important; }
+.vx-progress-step-label strong, .vx-step-num { color: var(--vx-indigo) !important; }
+
+/* Any leftover lime accents anywhere → indigo */
+.ec-radio-btn.active .ec-radio-dot-inner,
+.vx-step-item.active .step-icon { background: var(--vx-indigo) !important; color: var(--vx-indigo) !important; }
+.ec-tone-chip.active { background: #EEF0FF !important; border-color: var(--vx-indigo) !important; color: var(--vx-indigo-deep) !important; }
+.vx-topbar-btn.export { color: var(--vx-indigo) !important; border-color: #C7C9F5 !important; background: #EEF0FF !important; }
+
+/* Eyebrows / accents */
 .ed-eyebrow, .vx-welcome-eyebrow, .vx-placeholder-eyebrow,
 .bm-eyebrow, .bo-eyebrow, .ed-active-label, .sh-panel-count,
 .jm-kpi-tier-label, .px-attr-k, .px-dyaf-title, .bo-rec {
   color: var(--vx-indigo) !important;
 }
 
-/* Primary action buttons: confident indigo→violet gradient with depth */
+/* ====================================================================
+   3. PRIMARY BUTTONS, DEPTH, SPACING (premium feel)
+   ==================================================================== */
 .rv-generate-btn, .bm-trigger-btn, .vx-begin-btn, .vx-btn-primary,
 .jm-export-btn.primary, .vx-nav-btn.next {
   background: linear-gradient(135deg, #5B52F0 0%, #4F46E5 50%, #6D28D9 100%) !important;
-  color: #fff !important;
-  border: none !important;
+  color: #fff !important; border: none !important;
   box-shadow: 0 6px 18px rgba(79,70,229,0.30) !important;
-  font-family: 'Syne', sans-serif !important;
-  letter-spacing: 0.01em !important;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease !important;
+  transition: transform 0.15s, box-shadow 0.15s, filter 0.15s !important;
 }
 .rv-generate-btn:hover:not(:disabled), .bm-trigger-btn:hover:not(:disabled),
-.vx-begin-btn:hover, .vx-btn-primary:hover, .jm-export-btn.primary:hover,
-.vx-nav-btn.next:hover {
+.vx-begin-btn:hover, .vx-btn-primary:hover, .jm-export-btn.primary:hover, .vx-nav-btn.next:hover {
   transform: translateY(-1px) !important;
-  box-shadow: 0 10px 26px rgba(79,70,229,0.38) !important;
-  filter: brightness(1.04) !important;
+  box-shadow: 0 10px 26px rgba(79,70,229,0.38) !important; filter: brightness(1.04) !important;
 }
 
-/* Progress fill + active accents → indigo, not lime */
-.vx-progress-fill, .ed-progress-fill {
-  background: linear-gradient(90deg, #6D28D9, #4F46E5) !important;
-}
-.vx-step-item.active .step-label, .vx-step-item.active .step-num,
-.ed-stage-card.active .ed-stage-icon, .ed-stage-card.active .ed-stage-name {
-  color: var(--vx-indigo) !important;
-}
-.ed-stage-card.active { border-color: var(--vx-indigo) !important; box-shadow: 0 0 0 1px var(--vx-indigo) inset, var(--vx-shadow-md) !important; }
+.vx-shell { background: var(--vx-card) !important; border: 1px solid var(--vx-line) !important; box-shadow: var(--vx-shadow-lg) !important; border-radius: 14px !important; overflow: hidden; }
+.vx-topbar { background: linear-gradient(120deg, #FBFBFE 0%, #F3F2FD 100%) !important; border-bottom: 1px solid var(--vx-line) !important; }
+.vx-sidebar { background: #F8F8FD !important; border-right: 1px solid var(--vx-line) !important; }
 
-/* Premium/VIP & gold cues use warm gold, the only secondary accent */
-.bo-chip.high, .px-cplx, .sh-tier-badge { /* keep readable */ }
-
-/* ---- 3. DEPTH: soft shadows + a touch of gradient on key surfaces ---- */
-.vx-shell {
-  background: var(--vx-card) !important;
-  border: 1px solid var(--vx-line) !important;
-  box-shadow: var(--vx-shadow-lg) !important;
-  border-radius: 14px !important;
-  overflow: hidden;
-}
-.vx-topbar {
-  background: linear-gradient(120deg, #FBFBFE 0%, #F3F2FD 100%) !important;
-  border-bottom: 1px solid var(--vx-line) !important;
-}
 .ed-stage-card, .sector-card, .ts-card, .sh-panel, .sh-fields-panel,
 .bm-card, .bm-wrap, .bo-card, .jm-tp-card, .jm-kpi-card, .px-attr,
 .rv-section, .oc-section {
-  border-radius: 12px !important;
-  box-shadow: var(--vx-shadow-sm) !important;
-  border: 1px solid var(--vx-line) !important;
+  border-radius: 12px !important; box-shadow: var(--vx-shadow-sm) !important; border: 1px solid var(--vx-line) !important;
 }
 .ed-stage-card:hover, .sector-card:hover, .ts-card:hover, .jm-tp-card:hover, .jm-kpi-card:hover {
-  box-shadow: var(--vx-shadow-md) !important;
-  transform: translateY(-2px);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: var(--vx-shadow-md) !important; transform: translateY(-2px); transition: transform 0.18s, box-shadow 0.18s;
 }
-.ed-active-banner {
-  background: linear-gradient(120deg, #EEF0FF 0%, #F3EEFE 100%) !important;
-  border: 1px solid #D9DBFA !important;
-  border-radius: 12px !important;
-  box-shadow: var(--vx-shadow-sm) !important;
-}
+.ed-active-banner { background: linear-gradient(120deg, #EEF0FF 0%, #F3EEFE 100%) !important; border: 1px solid #D9DBFA !important; border-radius: 12px !important; box-shadow: var(--vx-shadow-sm) !important; }
 
-/* Hero/welcome a touch more dramatic */
 .vx-welcome-title, .ed-dash-title {
   background: linear-gradient(120deg, #1E1B3A 0%, #4F46E5 60%, #7C3AED 100%);
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent;
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 }
 
-/* ---- 4. SPACING & RHYTHM: more breathing room ---- */
 .vx-main { padding: 30px 34px !important; }
 .ed-stage-grid { gap: 16px !important; }
 .ed-stage-card { padding: 20px !important; }
@@ -159,34 +152,34 @@ body, input, textarea, select, button,
 .px-attr { padding: 14px 16px !important; }
 .bm-meta-bar { padding: 14px 16px !important; gap: 22px !important; }
 
-/* Inputs feel softer and more modern */
 input, textarea, select, .oc-select, .oc-number, .sh-input, .ec-input {
-  border-radius: 9px !important;
-  border: 1px solid #D7DAE8 !important;
-  padding: 10px 13px !important;
+  border-radius: 9px !important; border: 1px solid #D7DAE8 !important; padding: 11px 13px !important;
   transition: border-color 0.15s, box-shadow 0.15s !important;
 }
-input:focus, textarea:focus, select:focus {
-  border-color: var(--vx-indigo) !important;
-  box-shadow: 0 0 0 3px rgba(79,70,229,0.14) !important;
-  outline: none !important;
-}
+input:focus, textarea:focus, select:focus { border-color: var(--vx-indigo) !important; box-shadow: 0 0 0 3px rgba(79,70,229,0.14) !important; outline: none !important; }
 
-/* Chips a bit rounder + softer */
-.bo-chip, .rv-chip, .sh-nat-chip, .bm-meta-v { border-radius: 999px !important; }
+.bo-chip, .rv-chip, .sh-nat-chip, .bm-meta-v, .ec-tone-chip { border-radius: 999px !important; }
+.bo-download-btn, .bm-dl-btn, .vx-nav-btn, .px-bulk-btn, .jm-export-btn { border-radius: 9px !important; transition: all 0.15s !important; }
+.bo-download-btn:hover, .bm-dl-btn:hover, .px-bulk-btn:hover, .jm-export-btn:hover { border-color: var(--vx-indigo) !important; color: var(--vx-indigo) !important; background: #F3F3FE !important; }
 
-/* Secondary (outline) buttons get a clean hover */
-.bo-download-btn, .bm-dl-btn, .vx-nav-btn, .px-bulk-btn, .jm-export-btn {
-  border-radius: 9px !important;
-  transition: all 0.15s ease !important;
-}
-.bo-download-btn:hover, .bm-dl-btn:hover, .px-bulk-btn:hover, .jm-export-btn:hover {
-  border-color: var(--vx-indigo) !important;
-  color: var(--vx-indigo) !important;
-  background: #F3F3FE !important;
-}
-
-/* Scrollbar — subtle, on-brand */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: #C7C9E8; border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
 ::-webkit-scrollbar-thumb:hover { background: #A5A7DD; background-clip: content-box; }
+
+/* ====================================================================
+   4. ICONS — clean, consistent, via CSS ::before (no JSX edits needed)
+   Field labels and eyebrows get a small leading glyph in indigo.
+   ==================================================================== */
+.ec-label::before, .oc-field-label::before, .sh-field-label::before {
+  content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 8px;
+  border-radius: 2px; background: var(--vx-indigo); transform: rotate(45deg); vertical-align: middle; opacity: 0.8;
+}
+/* Section eyebrows get a small bullet */
+.vx-placeholder-eyebrow::before, .ed-eyebrow::before, .bm-eyebrow::before, .bo-eyebrow::before {
+  content: "◆ "; color: var(--vx-violet); font-size: 0.85em;
+}
+/* Tone / selectable chips lift on hover for a tactile feel */
+.ec-tone-chip { transition: all 0.15s ease !important; }
+.ec-tone-chip:hover { border-color: var(--vx-indigo) !important; color: var(--vx-indigo) !important; transform: translateY(-1px); }
+.sh-nat-chip { transition: all 0.15s ease !important; }
+.sh-nat-chip:hover { transform: translateY(-1px); }
