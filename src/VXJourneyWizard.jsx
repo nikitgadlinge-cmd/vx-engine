@@ -908,6 +908,19 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
   const hmlPct = (lvl) => (lvl === "High" ? 100 : lvl === "Med" ? 60 : 35);
   const initialsOf = (name) => (name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
 
+  // Plain-language orientation block shown before each stage's results
+  const StageContext = ({ stage, where, done, expect, value }) => (
+    <div className="stage-context">
+      <div className="stage-context-badge">Stage {stage} of 4</div>
+      <div className="stage-context-grid">
+        <div className="stage-context-item"><span className="stage-context-k">Where you are</span><span className="stage-context-v">{where}</span></div>
+        <div className="stage-context-item"><span className="stage-context-k">What's done so far</span><span className="stage-context-v">{done}</span></div>
+        <div className="stage-context-item"><span className="stage-context-k">What this gives you</span><span className="stage-context-v">{expect}</span></div>
+        <div className="stage-context-item"><span className="stage-context-k">Why it matters</span><span className="stage-context-v">{value}</span></div>
+      </div>
+    </div>
+  );
+
   const handleExportBriefPDF = async () => {
     if (!briefData) return;
     setPdfBusy("brief");
@@ -1021,7 +1034,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
           if (st.summary) html += `<div class="pdf-v" style="margin-bottom:8px">${esc(st.summary)}</div>`;
           (st.touchpoints || []).forEach(tp => {
             html += `<div style="margin:6px 0 10px;padding-left:8px;border-left:3px solid #C7D2FE"><div style="font-weight:700;font-size:12px">${esc(tp.name)} <span style="color:#6366F1;font-weight:600">${esc(tp.channel)}</span></div>`;
-            if (tp.emotion) html += `<div style="font-size:11px;color:#6B7280;font-style:italic">"${esc(tp.emotion)}"</div>`;
+            if (tp.emotion_line || tp.emotion) html += `<div style="font-size:11px;color:#6B7280;font-style:italic">${esc(tp.emotion_line || tp.emotion)}</div>`;
             const bar = (label, n, invert) => { const lvl = HML(n); return `<div class="pdf-bar-row"><span class="pdf-bar-k">${label}</span><span class="pdf-bar-track"><span class="pdf-bar-fill" style="width:${hmlPct(lvl)}%;background:${hmlColor(lvl, invert)}"></span></span><span class="pdf-bar-v" style="color:${hmlColor(lvl, invert)}">${lvl}</span></div>`; };
             html += bar("Pain", tp.pain_level) + bar("Delight", tp.delight_level, true) + bar("Risk", tp.risk_level) + bar("Access. Impact", tp.accessibility_impact) + bar("Ops Complexity", tp.operational_complexity) + `<div class="pdf-bar-row"><span class="pdf-bar-k">Priority</span><span class="pdf-bar-track"><span class="pdf-bar-fill" style="width:${hmlPct(HML(tp.priority_score))}%;background:#4F46E5"></span></span><span class="pdf-bar-v" style="color:#4F46E5">${HML(tp.priority_score)}</span></div>`;
             html += `</div>`;
@@ -4421,8 +4434,15 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                         <div className="sh-fields-body">
                           <div className="sh-field">
                             <label className="sh-field-label">Primary Nationalities</label>
+                            <p className="sh-field-hint">Select the visitor nationalities most relevant to your venue (grouped by region).</p>
                             <div className="sh-nat-grid">
-                              {["Emirati","Saudi","Qatari","Kuwaiti","British","American","Indian","Pakistani","Filipino","Chinese","Russian","German","French","Egyptian","Other GCC","European","Asian Tourist"].map((nat) => {
+                              {[
+                                "United States","United Kingdom","Canada","Germany","France","Italy","Spain","Netherlands",
+                                "UAE","Saudi Arabia","Qatar","Egypt","Türkiye",
+                                "India","China","Japan","South Korea","Singapore","Indonesia","Philippines",
+                                "Australia","New Zealand",
+                                "Brazil","Mexico","South Africa","Nigeria","Kenya","Russia",
+                              ].map((nat) => {
                                 const list = shNationalities ? shNationalities.split(", ").filter(Boolean) : [];
                                 const on = list.includes(nat);
                                 return (
@@ -5087,6 +5107,13 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
 
                         return (
                           <div className="bo-wrap">
+                            <StageContext
+                              stage={1}
+                              where="You've finished the intake questionnaire. This is your Experience Design Brief — the foundation everything else is built on."
+                              done="We've captured your venue type, theme, scale, stakeholders, motivations and priorities from the wizard."
+                              expect="A structured brief that turns your answers into a clear design direction: themes, friction zones, priority outcomes and a chosen framework."
+                              value="It aligns everyone on what the experience should achieve before any design work begins — the brief every later stage references."
+                            />
                             <div className="bo-header">
                               <div className="bo-header-left">
                                 <span className="bo-eyebrow">◈ VX Journey Intelligence Engine</span>
@@ -5206,6 +5233,13 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                           };
                           return (
                             <div className="bm-wrap">
+                              <StageContext
+                                stage={2}
+                                where="You're now looking outward — at how the best venues in your sector solve the same challenges."
+                                done="Your brief defined the goals and friction zones. We've matched them against proven, real-world leading practices."
+                                expect="Benchmark intelligence: winning patterns, proven design levers, common failure modes and the KPI norms top venues hit."
+                                value="It grounds your design in what already works globally, so you adopt proven moves and avoid known mistakes."
+                              />
                               <div className="bm-header">
                                 <div className="bm-header-left">
                                   <span className="bm-eyebrow">◈ Stage 2 · Analysis for Global Leading Practices</span>
@@ -5266,6 +5300,13 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                           const cplxColor = (v) => v === "Very High" ? "#C07070" : v === "High" ? "#C8B840" : v === "Medium" ? "#7AC8E0" : "#80C870";
                           return (
                             <div className="bm-wrap">
+                              <StageContext
+                                stage={3}
+                                where="This is your first headline deliverable: the visitor personas your whole experience will be designed around."
+                                done="Using your brief and the benchmark intelligence, we've synthesised a candidate list of distinct visitor types for your sector."
+                                expect="A long list of personas to review — select the ones to carry forward, then we build full, rich persona cards and a comparison matrix."
+                                value="Personas turn abstract 'visitors' into specific people with needs and motivations, so every design decision has a face behind it."
+                              />
                               <div className="bm-header">
                                 <div className="bm-header-left">
                                   <span className="bm-eyebrow">◍ Stage 3 · Persona Synthesis Engine</span>
@@ -5407,23 +5448,45 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                                       </div>
                                       {isOpen && (
                                         <div className="bm-card-body">
-                                          {p.identity && <div className="bm-kv" style={{marginBottom:4}}><span className="bm-k">Identity</span><span className="bm-v">{p.identity}</span></div>}
+                                          {p.quote && (
+                                            <div className="px-quote">
+                                              <span className="px-quote-mark">"</span>
+                                              <span className="px-quote-text">{p.quote.replace(/^"|"$/g, "")}</span>
+                                            </div>
+                                          )}
+                                          {p.identity && <div className="px-identity"><span className="px-attr-k">◐ Who They Are</span><p>{p.identity}</p></div>}
+                                          {p.meters && (
+                                            <div className="px-meters">
+                                              {[
+                                                { k: "Tech Savviness", v: p.meters.tech_savviness },
+                                                { k: "Price Sensitivity", v: p.meters.price_sensitivity },
+                                                { k: "Planning Style", v: p.meters.planning_style, lo: "Spontaneous", hi: "Highly planned" },
+                                                { k: "Support Need", v: p.meters.support_need },
+                                                { k: "Advocacy Potential", v: p.meters.advocacy_potential },
+                                              ].map((m) => (
+                                                <div key={m.k} className="px-meter">
+                                                  <span className="px-meter-k">{m.k}</span>
+                                                  <span className="px-meter-track"><span className="px-meter-fill" style={{ width: `${m.v}%` }} /></span>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
                                           <div className="px-attr-grid">
-                                            {list(p.motivations) && <div className="px-attr"><span className="px-attr-k">✦ Motivations</span><ul className="px-attr-list">{p.motivations.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
-                                            {list(p.goals) && <div className="px-attr"><span className="px-attr-k">◎ Goals</span><ul className="px-attr-list">{p.goals.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
-                                            {list(p.pain_points) && <div className="px-attr"><span className="px-attr-k">▲ Pain Points</span><ul className="px-attr-list pain">{p.pain_points.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
-                                            {list(p.expectations) && <div className="px-attr"><span className="px-attr-k">◈ Expectations</span><ul className="px-attr-list">{p.expectations.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
-                                            {list(p.journey_risks) && <div className="px-attr"><span className="px-attr-k">⚠ Journey Risks</span><ul className="px-attr-list pain">{p.journey_risks.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
-                                            {list(p.key_emotional_drivers) && <div className="px-attr"><span className="px-attr-k">♥ Emotional Drivers</span><ul className="px-attr-list">{p.key_emotional_drivers.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
+                                            {list(p.motivations) && <div className="px-attr motiv"><span className="px-attr-k">✦ Motivations</span><ul className="px-attr-list">{p.motivations.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
+                                            {list(p.goals) && <div className="px-attr goal"><span className="px-attr-k">◎ Goals</span><ul className="px-attr-list">{p.goals.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
+                                            {list(p.pain_points) && <div className="px-attr pain"><span className="px-attr-k">▲ Pain Points</span><ul className="px-attr-list pain">{p.pain_points.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
+                                            {list(p.expectations) && <div className="px-attr expect"><span className="px-attr-k">◈ Expectations</span><ul className="px-attr-list">{p.expectations.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
+                                            {list(p.journey_risks) && <div className="px-attr pain"><span className="px-attr-k">⚠ Journey Risks</span><ul className="px-attr-list pain">{p.journey_risks.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
+                                            {list(p.key_emotional_drivers) && <div className="px-attr emote"><span className="px-attr-k">♥ Emotional Drivers</span><ul className="px-attr-list">{p.key_emotional_drivers.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
                                           </div>
-                                          <div className="bm-kv-grid" style={{marginTop:8}}>
-                                            {p.accessibility_needs && <div className="bm-kv"><span className="bm-k">Accessibility Needs</span><span className="bm-v">{p.accessibility_needs}</span></div>}
-                                            {p.digital_behaviour && <div className="bm-kv"><span className="bm-k">Digital Behaviour</span><span className="bm-v">{p.digital_behaviour}</span></div>}
-                                            {p.visit_behaviour && <div className="bm-kv"><span className="bm-k">Visit Behaviour</span><span className="bm-v">{p.visit_behaviour}</span></div>}
-                                            {p.spending_behaviour && <div className="bm-kv"><span className="bm-k">Spending Behaviour</span><span className="bm-v">{p.spending_behaviour}</span></div>}
-                                            {p.success_definition && <div className="bm-kv" style={{gridColumn:"span 2"}}><span className="bm-k">Success Definition</span><span className="bm-v accent">{p.success_definition}</span></div>}
+                                          <div className="px-behaviour-grid">
+                                            {p.accessibility_needs && <div className="px-beh"><span className="bm-k">♿ Accessibility Needs</span><span className="bm-v">{p.accessibility_needs}</span></div>}
+                                            {p.digital_behaviour && <div className="px-beh"><span className="bm-k">▣ Digital Behaviour</span><span className="bm-v">{p.digital_behaviour}</span></div>}
+                                            {p.visit_behaviour && <div className="px-beh"><span className="bm-k">◉ Visit Behaviour</span><span className="bm-v">{p.visit_behaviour}</span></div>}
+                                            {p.spending_behaviour && <div className="px-beh"><span className="bm-k">$ Spending Behaviour</span><span className="bm-v">{p.spending_behaviour}</span></div>}
                                           </div>
-                                          {list(p.preferred_channels) && <div style={{marginTop:8}}><span className="bm-k" style={{display:"block",marginBottom:6}}>Preferred Channels</span><div className="bo-chips">{p.preferred_channels.map((c,i)=><span key={i} className="bo-chip">{i+1}. {c}</span>)}</div></div>}
+                                          {p.success_definition && <div className="px-success"><span className="px-attr-k">★ What Success Looks Like</span><p>{p.success_definition}</p></div>}
+                                          {list(p.preferred_channels) && <div style={{marginTop:12}}><span className="bm-k" style={{display:"block",marginBottom:6}}>Preferred Channels</span><div className="bo-chips">{p.preferred_channels.map((c,i)=><span key={i} className="bo-chip">{i+1}. {c}</span>)}</div></div>}
                                         </div>
                                       )}
                                     </div>
@@ -5447,8 +5510,8 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                                             <td>{m.accessibility_need}</td>
                                             <td>{m.loyalty_potential}</td>
                                             <td>{m.advocacy_potential}</td>
-                                            <td style={{color:"#C8F04A"}}>{m.strategic_value}</td>
-                                            <td style={{color: m.pod_flag ? "#C8B840" : "#5A6478"}}>{m.pod_flag ? "Yes" : "No"}</td>
+                                            <td style={{color:"#4F46E5",fontWeight:600}}>{m.strategic_value}</td>
+                                            <td style={{color: m.pod_flag ? "#B8860B" : "#94A3B8"}}>{m.pod_flag ? "Yes" : "No"}</td>
                                           </tr>
                                         ))}
                                       </tbody>
@@ -5489,6 +5552,13 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                           ];
                           return (
                             <div className="bm-wrap">
+                              <StageContext
+                                stage={4}
+                                where="This is your second headline deliverable: how each persona actually experiences your venue, end to end."
+                                done="With personas confirmed, we've mapped each one's five-phase journey and analysed every touchpoint."
+                                expect="Full journey maps with an emotional curve, the Moments of Truth that make or break the visit, and a three-tier KPI framework to measure success."
+                                value="This is where insight becomes action: it shows exactly where to invest, what to fix first, and how you'll know it worked."
+                              />
                               <div className="bm-header">
                                 <div className="bm-header-left">
                                   <span className="bm-eyebrow">◆ Stage 4 · Journey Intelligence</span>
@@ -5532,11 +5602,42 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                                     ))}
                                   </div>
                                   {stage.summary && <div className="jm-stage-summary">{stage.summary}</div>}
+
+                                  {/* Emotional curve across this stage's touchpoints */}
+                                  {(stage.touchpoints || []).some(t => t.sentiment != null) && (() => {
+                                    const pts = (stage.touchpoints || []).map(t => t.sentiment ?? 50);
+                                    const n = pts.length;
+                                    const W = 100, H = 40;
+                                    const xy = pts.map((s, i) => [n === 1 ? W / 2 : (i / (n - 1)) * W, H - (s / 100) * H]);
+                                    const path = xy.map((p, i) => `${i === 0 ? "M" : "L"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
+                                    const area = `${path} L${W},${H} L0,${H} Z`;
+                                    return (
+                                      <div className="jm-curve">
+                                        <div className="jm-curve-head"><span className="jm-curve-title">Emotional Curve</span><span className="jm-curve-sub">How the visitor feels across this stage — peaks are delight, dips are friction</span></div>
+                                        <svg className="jm-curve-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+                                          <defs>
+                                            <linearGradient id="jmCurveFill" x1="0" y1="0" x2="0" y2="1">
+                                              <stop offset="0%" stopColor="#7C3AED" stopOpacity="0.28" />
+                                              <stop offset="100%" stopColor="#7C3AED" stopOpacity="0.02" />
+                                            </linearGradient>
+                                          </defs>
+                                          <path d={area} fill="url(#jmCurveFill)" />
+                                          <path d={path} fill="none" stroke="#6D28D9" strokeWidth="1.4" vectorEffect="non-scaling-stroke" />
+                                          {xy.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r="1.8" fill="#6D28D9" vectorEffect="non-scaling-stroke" />)}
+                                        </svg>
+                                        <div className="jm-curve-labels">
+                                          {(stage.touchpoints || []).map((t, i) => <span key={i} className="jm-curve-lbl">{t.name}</span>)}
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
+
                                   <div className="jm-legend">
+                                    <span className="jm-legend-title">How to read the bars:</span>
                                     <span className="jm-legend-item"><span className="jm-legend-dot" style={{background:"#16A34A"}} /> Low</span>
-                                    <span className="jm-legend-item"><span className="jm-legend-dot" style={{background:"#D97706"}} /> Med</span>
+                                    <span className="jm-legend-item"><span className="jm-legend-dot" style={{background:"#D97706"}} /> Medium</span>
                                     <span className="jm-legend-item"><span className="jm-legend-dot" style={{background:"#DC2626"}} /> High</span>
-                                    <span className="jm-legend-note">For Pain / Risk / Access / Ops, lower is better. For Delight, higher is better.</span>
+                                    <span className="jm-legend-note">Greener is better. For Pain, Risk, Accessibility barriers and Ops effort, lower (green) is good. For Delight, higher is good.</span>
                                   </div>
                                   <div className="jm-touchpoints">
                                     {(stage.touchpoints || []).map((tp, i) => {
@@ -5557,13 +5658,13 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                                             <span className="jm-tp-name"><span className="jm-tp-icon">{chIcon}</span> {tp.name}</span>
                                             <span className="jm-tp-channel">{tp.channel}</span>
                                           </div>
-                                          {tp.emotion && <div className="jm-tp-emotion-row">“{tp.emotion}”</div>}
+                                          {(tp.emotion_line || tp.emotion) && <div className="jm-tp-emotion-row">{tp.emotion_line || `“${tp.emotion}”`}</div>}
                                           <div className="jm-score-grid">
                                             {row("Pain", tp.pain_level)}
                                             {row("Delight", tp.delight_level, true)}
                                             {row("Risk", tp.risk_level)}
-                                            {row("Access. Impact", tp.accessibility_impact)}
-                                            {row("Ops Complexity", tp.operational_complexity)}
+                                            {row("Access. Barrier", tp.accessibility_impact)}
+                                            {row("Ops Effort", tp.operational_complexity)}
                                             <div className="jm-score">
                                               <span className="jm-score-k">Priority</span>
                                               <span className="jm-score-bar"><span className="jm-score-fill" style={{ width: `${hmlPct(HML(tp.priority_score))}%`, background: "#4F46E5" }} /></span>
