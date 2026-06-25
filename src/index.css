@@ -342,3 +342,13 @@ input:focus, textarea:focus, select:focus { border-color: var(--vx-indigo) !impo
 .sh-nat-chip:hover { border-color: var(--vx-indigo) !important; color: var(--vx-indigo) !important; transform: translateY(-1px); }
 .sh-nat-chip.on { background: linear-gradient(135deg, #5B52F0, #6D28D9) !important; border-color: transparent !important; color: #fff !important; box-shadow: 0 3px 10px rgba(79,70,229,0.28); }
 .sh-tier-badge { border-radius: 999px !important; font-weight: 600 !important; }
+
+/* ---- Journey bar legend — clearer per-bar explanations ---- */
+.jm-legend { display: block !important; }
+.jm-legend-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.jm-legend-scale { display: inline-flex; gap: 14px; }
+.jm-legend-defs { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 6px 22px; }
+.jm-legend-def { font-size: 12px; line-height: 1.5; color: var(--vx-slate); }
+.jm-legend-def strong { color: var(--vx-ink); font-weight: 700; }
+.jm-legend-def em { color: var(--vx-mute); font-style: italic; }
+@media (max-width: 720px) { .jm-legend-defs { grid-template-columns: minmax(0,1fr); } }
