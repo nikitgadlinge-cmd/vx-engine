@@ -359,6 +359,7 @@ Required top-level keys and shapes:
       setBriefData(parsed);
       setBriefOpenSections(Object.fromEntries(Object.keys(parsed).map((k, i) => [k, i === 0])));
       setAiOutput(JSON.stringify(parsed, null, 2));
+      scrollToOutput(briefOutRef);
     } catch (err) {
       setAiError(err.message);
       console.error("Brief generation error:", err);
@@ -436,6 +437,7 @@ Required JSON shape:
 
       setBenchmarkData(parsed);
       setActiveBenchmarkCategory(BENCHMARK_CATEGORIES[0].key);
+      scrollToOutput(benchmarkOutRef);
       const initCards = {};
       BENCHMARK_CATEGORIES.forEach(c => {
         (parsed[c.key] || []).forEach((_, i) => { initCards[`${c.key}-${i}`] = false; });
@@ -474,6 +476,17 @@ Required JSON shape:
   // Shared generation feedback: elapsed timer + cancel handle
   const abortRef = useRef(null);
   const manualCancelRef = useRef(false);
+  // Refs to scroll the freshly-generated stage output to the top of the viewport
+  const briefOutRef = useRef(null);
+  const benchmarkOutRef = useRef(null);
+  const personaOutRef = useRef(null);
+  const journeyOutRef = useRef(null);
+  const scrollToOutput = (ref) => {
+    // Wait for the new content to render, then bring its top into view
+    setTimeout(() => {
+      try { ref.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
+    }, 120);
+  };
   const [genElapsed, setGenElapsed] = useState(0);
 
   const cancelGeneration = () => {
@@ -609,8 +622,9 @@ Required JSON shape:
 
     try {
       await wait(FAKE_DELAY);
-      const parsed = buildSamplePersonaLongList({ sectorId: briefData?.sector_context?.sector_id || selectedSector?.id, sector: briefData?.sector_context?.sector || selectedSector?.label });
+      const parsed = buildSamplePersonaLongList({ sectorId: briefData?.sector_context?.sector_id || selectedSector?.id, sector: briefData?.sector_context?.sector || selectedSector?.label, selectedTiers: (briefData?.stakeholder_map?.active_tiers || shTiers || []) });
       setPersonaData(parsed);
+      scrollToOutput(personaOutRef);
       // seed selections from recommended defaults
       const seed = {};
       (parsed.long_list || []).forEach(p => { seed[p.id] = p.recommended_default || "include"; });
@@ -675,7 +689,7 @@ Required JSON shape:
     const payload = {
       context: buildUpstreamContext(),
       selected_personas: selected.map(p => ({
-        id: p.id, name: p.name, archetype: p.archetype,
+        id: p.id, name: p.name, given_name: p.given_name, archetype: p.archetype,
         tier: p.tier, segment: p.segment,
         motivation: p.motivation, secondary_motivation: p.secondary_motivation,
         description: p.description, journey_complexity: p.journey_complexity,
@@ -688,6 +702,7 @@ Required JSON shape:
       await wait(FAKE_DELAY);
       const parsed = buildSampleFullPersonas(payload.selected_personas, briefData?.sector_context?.sector_id || selectedSector?.id);
       setFullPersonas(parsed);
+      scrollToOutput(personaOutRef);
       const cards = {};
       (parsed.personas || []).forEach((p, i) => { cards[p.id] = i === 0; });
       setFullPersonaOpenCards(cards);
@@ -807,6 +822,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
       await wait(FAKE_DELAY);
       const parsed = buildSampleJourneys(fullPersonas.personas, payload.template_used, briefData?.sector_context?.sector_id || selectedSector?.id);
       setJourneyData(parsed);
+      scrollToOutput(journeyOutRef);
       const first = parsed.journeys?.[0]?.persona_id || null;
       setActiveJourneyPersona(first);
       setActiveJourneyStage(0);
@@ -5106,7 +5122,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                         };
 
                         return (
-                          <div className="bo-wrap">
+                          <div className="bo-wrap" ref={briefOutRef}>
                             <StageContext
                               stage={1}
                               where="You've finished the intake questionnaire. This is your Experience Design Brief — the foundation everything else is built on."
@@ -5232,7 +5248,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                             );
                           };
                           return (
-                            <div className="bm-wrap">
+                            <div className="bm-wrap" ref={benchmarkOutRef}>
                               <StageContext
                                 stage={2}
                                 where="You're now looking outward — at how the best venues in your sector solve the same challenges."
@@ -5299,7 +5315,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                           ];
                           const cplxColor = (v) => v === "Very High" ? "#C07070" : v === "High" ? "#C8B840" : v === "Medium" ? "#7AC8E0" : "#80C870";
                           return (
-                            <div className="bm-wrap">
+                            <div className="bm-wrap" ref={personaOutRef}>
                               <StageContext
                                 stage={3}
                                 where="This is your first headline deliverable: the visitor personas your whole experience will be designed around."
@@ -5350,7 +5366,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                                         <div className="bm-card-header-left">
                                           <span className="px-avatar" style={{ background: p.pod_flag ? "#0E7A8A" : "#4F46E5" }}>{(p.name || "?").split(" ").map(w => w[0]).slice(0,2).join("").toUpperCase()}</span>
                                           <div className="px-head-text">
-                                            <span className="bm-card-title">{p.name}{p.pod_flag && <span className="px-pod-chip">♿ POD</span>}</span>
+                                            <span className="bm-card-title">{p.given_name ? `${p.given_name} — ${p.name}` : p.name}{p.pod_flag && <span className="px-pod-chip">♿ POD</span>}</span>
                                             <span className="bm-card-institution">{p.archetype} · {p.tier}</span>
                                           </div>
                                         </div>
@@ -5437,7 +5453,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                                             {(p.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()}
                                           </span>
                                           <div className="px-head-text">
-                                            <span className="bm-card-title">{p.name} {p.pod_flag && <span className="px-pod-chip">♿ POD</span>}</span>
+                                            <span className="bm-card-title">{p.given_name ? `${p.given_name} — ${p.name}` : p.name} {p.pod_flag && <span className="px-pod-chip">♿ POD</span>}</span>
                                             <span className="bm-card-institution">{p.archetype} · {p.tier}</span>
                                           </div>
                                         </div>
@@ -5551,7 +5567,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                             { key: "Operational", label: "Operational KPIs" },
                           ];
                           return (
-                            <div className="bm-wrap">
+                            <div className="bm-wrap" ref={journeyOutRef}>
                               <StageContext
                                 stage={4}
                                 where="This is your second headline deliverable: how each persona actually experiences your venue, end to end."
@@ -5633,11 +5649,22 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                                   })()}
 
                                   <div className="jm-legend">
-                                    <span className="jm-legend-title">How to read the bars:</span>
-                                    <span className="jm-legend-item"><span className="jm-legend-dot" style={{background:"#16A34A"}} /> Low</span>
-                                    <span className="jm-legend-item"><span className="jm-legend-dot" style={{background:"#D97706"}} /> Medium</span>
-                                    <span className="jm-legend-item"><span className="jm-legend-dot" style={{background:"#DC2626"}} /> High</span>
-                                    <span className="jm-legend-note">Greener is better. For Pain, Risk, Accessibility barriers and Ops effort, lower (green) is good. For Delight, higher is good.</span>
+                                    <div className="jm-legend-row">
+                                      <span className="jm-legend-title">How to read the bars</span>
+                                      <span className="jm-legend-scale">
+                                        <span className="jm-legend-item"><span className="jm-legend-dot" style={{background:"#16A34A"}} /> Low</span>
+                                        <span className="jm-legend-item"><span className="jm-legend-dot" style={{background:"#D97706"}} /> Medium</span>
+                                        <span className="jm-legend-item"><span className="jm-legend-dot" style={{background:"#DC2626"}} /> High</span>
+                                      </span>
+                                    </div>
+                                    <div className="jm-legend-defs">
+                                      <div className="jm-legend-def"><strong>Pain</strong> — how frustrating or stressful this step is for the visitor. <em>Lower is better.</em></div>
+                                      <div className="jm-legend-def"><strong>Delight</strong> — how positive or enjoyable this moment feels. <em>Higher is better.</em></div>
+                                      <div className="jm-legend-def"><strong>Risk</strong> — how likely this step is to go wrong and damage the visit. <em>Lower is better.</em></div>
+                                      <div className="jm-legend-def"><strong>Access. Barrier</strong> — how hard this step is for visitors with accessibility needs. <em>Lower is better.</em></div>
+                                      <div className="jm-legend-def"><strong>Ops Effort</strong> — how much staff/operational effort this step demands to run well. <em>Lower is easier.</em></div>
+                                      <div className="jm-legend-def"><strong>Priority</strong> — how important it is to get this step right (where to focus). <em>Higher = focus here first.</em></div>
+                                    </div>
                                   </div>
                                   <div className="jm-touchpoints">
                                     {(stage.touchpoints || []).map((tp, i) => {
