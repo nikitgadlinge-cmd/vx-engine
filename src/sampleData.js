@@ -398,10 +398,71 @@ export function buildSamplePersonaLongList(ctx) {
   const key = resolveSector(ctx.sectorId, ctx.sector);
   const lib = SECTORS[key];
   const sector = ctx.sector || lib.label;
+
+  // Pool of relatable first names assigned deterministically per persona id.
+  const NAMES = ["Alex", "Maya", "Omar", "Sofia", "Liam", "Aisha", "Noah", "Priya", "Yusuf", "Elena", "Diego", "Hana"];
+  const nameFor = (id, idx) => NAMES[(parseInt(String(id).replace(/\D/g, ""), 10) || idx + 1) % NAMES.length];
+
+  let list = lib.personas.map((p, idx) => ({
+    ...p,
+    given_name: nameFor(p.id, idx),
+    source: "Sector synthesis",
+    source_confidence: p.pod_flag ? "High" : "Medium",
+  }));
+
+  // #2b — guarantee every user-selected stakeholder tier appears as a persona.
+  const selectedTiers = (ctx.selectedTiers || []).filter(Boolean);
+  if (selectedTiers.length) {
+    const tierKey = (t) => (t || "").toLowerCase().replace(/[^a-z]/g, "");
+    const present = new Set(list.map((p) => tierKey(p.tier)));
+    selectedTiers.forEach((tier, i) => {
+      // crude tier match: does any persona's tier mention this selected tier?
+      const tk = tierKey(tier);
+      const matched = list.some((p) => tierKey(p.tier).includes(tk) || tk.includes(tierKey(p.tier).slice(0, 4)));
+      if (!matched) {
+        const id = `P-${String(list.length + 1).padStart(2, "0")}`;
+        list.push(makeTierPersona(tier, id, nameFor(id, list.length), lib));
+      }
+    });
+  }
+
   return {
-    meta: { sector, total_candidates: lib.personas.length, method: `Synthesised for the ${lib.label.toLowerCase()} sector from stakeholder tiers, motivations, accessibility needs and benchmark archetypes.` },
-    long_list: lib.personas.map((p) => ({ ...p, source: "Sector synthesis", source_confidence: p.pod_flag ? "High" : "Medium" })),
+    meta: { sector, total_candidates: list.length, method: `Synthesised for the ${lib.label.toLowerCase()} sector from your selected stakeholder tiers, motivations, accessibility needs and benchmark archetypes.` },
+    long_list: list,
     did_you_account_for_this: didYouAccount(key),
+  };
+}
+
+// Build a sensible persona for a user-selected tier that the library didn't cover.
+function makeTierPersona(tier, id, given_name, lib) {
+  const t = (tier || "").toLowerCase();
+  const isVIP = t.includes("vvip") || t.includes("vip");
+  const isB2B = t.includes("b2b") || t.includes("partner");
+  const isB2E = t.includes("b2e") || t.includes("employee") || t.includes("staff");
+  const isMedia = t.includes("media") || t.includes("press");
+  const isGov = t.includes("gov") || t.includes("author");
+  const isPOD = t.includes("pod") || t.includes("determination") || t.includes("disab");
+  const preset = isVIP
+    ? { name: "VIP Guest", archetype: "Hosted Premium Visitor", segment: "Premium / sponsor", motivation: "A premium, frictionless, hosted experience.", secondary_motivation: "Recognition and exclusivity.", strategic_value: "High-margin, reputationally important.", description: "Expects expedited access, a named host and elevated touchpoints throughout.", journey_complexity: "High", risk_profile: "Medium — high expectations of the premium promise.", constraint_flags: ["Protocol / privacy"], pod_flag: false }
+    : isB2B
+    ? { name: "B2B Partner", archetype: "Group & Trade Buyer", segment: "Corporate / travel trade", motivation: "Smooth group logistics and clear value.", secondary_motivation: "Reliable account handling.", strategic_value: "Bulk revenue and repeat bookings.", description: "Books on behalf of groups; needs coordination, billing flexibility and a named contact.", journey_complexity: "High", risk_profile: "Medium — group flow affects others.", constraint_flags: ["Group logistics"], pod_flag: false }
+    : isB2E
+    ? { name: "Staff / Internal Visitor", archetype: "Employee Day Visitor", segment: "B2E / internal", motivation: "Easy internal access and a good staff experience.", secondary_motivation: "Pride in the venue.", strategic_value: "Engagement and internal advocacy.", description: "Visiting as staff or on a staff day; needs streamlined access.", journey_complexity: "Low", risk_profile: "Low.", constraint_flags: [], pod_flag: false }
+    : isMedia
+    ? { name: "Media / Press Guest", archetype: "Coverage Seeker", segment: "Media", motivation: "Get the access, story and shots they need.", secondary_motivation: "Efficient, briefed handling.", strategic_value: "Reach and reputation.", description: "Needs press access, photo permissions and a briefed escort.", journey_complexity: "Medium", risk_profile: "Medium — timing must not clash with visitor flow.", constraint_flags: ["Access / timing"], pod_flag: false }
+    : isGov
+    ? { name: "Government / Authority", archetype: "Protocol & Compliance Visitor", segment: "Authorities", motivation: "Protocol observed and standards met.", secondary_motivation: "Documentation and assurance.", strategic_value: "Licence to operate.", description: "Requires protocol compliance, documentation and inspection-ready facilities.", journey_complexity: "High", risk_profile: "High — compliance-critical.", constraint_flags: ["Protocol", "Compliance"], pod_flag: false }
+    : isPOD
+    ? { name: "Accessibility-First Visitor", archetype: "POD Companion", segment: "Person of determination + carer", motivation: "A dignified, barrier-free visit.", secondary_motivation: "Independence wherever possible.", strategic_value: "Inclusion is essential and reputationally vital.", description: "Needs step-free routing, rest points and clear information.", journey_complexity: "Very High", risk_profile: "High — small failures have large impact.", constraint_flags: ["Wheelchair access", "Rest dependency"], pod_flag: true }
+    : { name: tier, archetype: "Selected Stakeholder", segment: tier, motivation: "A smooth, valuable visit suited to their group.", secondary_motivation: "Feeling well looked after.", strategic_value: "Represents a tier you flagged as important.", description: `Added because you selected the ${tier} tier — its needs must be designed for.`, journey_complexity: "Medium", risk_profile: "Medium.", constraint_flags: [], pod_flag: false };
+  return {
+    id, given_name, tier,
+    name: preset.name, archetype: preset.archetype, segment: preset.segment,
+    motivation: preset.motivation, secondary_motivation: preset.secondary_motivation,
+    strategic_value: preset.strategic_value, description: preset.description,
+    journey_complexity: preset.journey_complexity, recommended_inclusion: "Recommended (you selected this tier)",
+    risk_profile: preset.risk_profile, constraint_flags: preset.constraint_flags, pod_flag: preset.pod_flag,
+    recommended_default: "include", source: "Your stakeholder selection", source_confidence: "High",
   };
 }
 
@@ -452,7 +513,7 @@ export function buildSampleFullPersonas(selected, sectorId) {
     };
 
     return {
-      id: p.id, name: p.name, archetype: p.archetype, tier: p.tier, segment: p.segment,
+      id: p.id, name: p.name, given_name: p.given_name, archetype: p.archetype, tier: p.tier, segment: p.segment,
       quote,
       meters,
       identity: p.description || `${p.archetype} visiting as part of the ${p.tier} group.`,
