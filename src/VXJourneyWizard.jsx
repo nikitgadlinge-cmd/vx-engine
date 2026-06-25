@@ -902,6 +902,25 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
     .pdf-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 20px; margin: 6px 0 12px; font-size: 10px; }
     .pdf-legend div { color: #475569; }
     .pdf-legend strong { color: #1E1B4B; }
+    .pdf-quote { background: #4F46E5; color: #fff; border-radius: 10px; padding: 12px 16px; margin: 8px 0 12px; font-size: 12px; font-style: italic; line-height: 1.45; page-break-inside: avoid; }
+    .pdf-meters { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 22px; background: #F7F8FC; border: 1px solid #ECECF6; border-radius: 10px; padding: 12px 14px; margin: 8px 0 12px; page-break-inside: avoid; }
+    .pdf-meter { display: flex; align-items: center; gap: 8px; font-size: 9.5px; }
+    .pdf-meter-k { min-width: 110px; color: #475569; font-weight: 600; }
+    .pdf-meter-track { flex: 1; height: 7px; background: #E4E6F2; border-radius: 6px; overflow: hidden; display: block; }
+    .pdf-meter-fill { display: block; height: 7px; border-radius: 6px; background: #6D28D9; }
+    .pdf-attr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+    .pdf-attr { border: 1px solid #ECECF6; border-left: 3px solid #4F46E5; border-radius: 8px; padding: 8px 11px; page-break-inside: avoid; }
+    .pdf-attr.pain { border-left-color: #DC2626; }
+    .pdf-attr.goal { border-left-color: #16A34A; }
+    .pdf-attr.emote { border-left-color: #DB2777; }
+    .pdf-attr.expect { border-left-color: #0891B2; }
+    .pdf-attr-k { display: block; font-size: 9px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #4F46E5; margin-bottom: 4px; }
+    .pdf-attr.pain .pdf-attr-k { color: #DC2626; } .pdf-attr.goal .pdf-attr-k { color: #16A34A; }
+    .pdf-attr.emote .pdf-attr-k { color: #DB2777; } .pdf-attr.expect .pdf-attr-k { color: #0891B2; }
+    .pdf-attr ul { margin: 0; padding-left: 15px; } .pdf-attr li { font-size: 10.5px; color: #2B2A3F; margin: 2px 0; line-height: 1.4; }
+    .pdf-success { background: #ECFDF5; border: 1px solid #BBF7D0; border-radius: 8px; padding: 9px 12px; margin: 6px 0; }
+    .pdf-success .pdf-attr-k { color: #15803D; }
+    .pdf-success span { font-size: 11px; color: #166534; font-weight: 500; }
   `;
 
   const renderPdfFromHtml = (innerHtml, title) => {
@@ -1021,12 +1040,22 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
         }
         html += `<div class="pdf-section"><div class="pdf-h2">Full Persona Cards</div>`;
         full.forEach(p => {
-          html += `<div class="pdf-card"><div class="pdf-persona-head"><span class="pdf-avatar" style="background:${p.pod_flag ? "#0E7A8A" : "#4F46E5"}">${esc(initialsOf(p.name))}</span><div><div class="pdf-card-name">${esc(p.name)}${p.pod_flag ? ' <span class="pdf-pill" style="background:#CFFAFE;color:#0E7490">POD</span>' : ""}</div><div class="pdf-card-sub" style="margin:0">${esc(p.archetype)} · ${esc(p.tier)}${p.segment ? " · " + esc(p.segment) : ""}</div></div></div>`;
-          if (p.identity) html += `<div class="pdf-kv"><span class="pdf-k">Identity</span><span class="pdf-v">${esc(p.identity)}</span></div>`;
-          const arr = (k, label) => (p[k]?.length ? `<div class="pdf-kv"><span class="pdf-k">${label}</span><span class="pdf-v"><ul class="pdf-list">${p[k].map(x => `<li>${esc(x)}</li>`).join("")}</ul></span></div>` : "");
-          html += arr("motivations", "Motivations") + arr("goals", "Goals") + arr("pain_points", "Pain Points") + arr("expectations", "Expectations") + arr("journey_risks", "Journey Risks") + arr("key_emotional_drivers", "Emotional Drivers");
+          const title = p.given_name ? `${esc(p.given_name)} — ${esc(p.name)}` : esc(p.name);
+          html += `<div class="pdf-card"><div class="pdf-persona-head"><span class="pdf-avatar" style="background:${p.pod_flag ? "#0E7A8A" : "#4F46E5"}">${esc(initialsOf(p.given_name || p.name))}</span><div><div class="pdf-card-name">${title}${p.pod_flag ? ' <span class="pdf-pill" style="background:#CFFAFE;color:#0E7490">POD</span>' : ""}</div><div class="pdf-card-sub" style="margin:0">${esc(p.archetype)} · ${esc(p.tier)}${p.segment ? " · " + esc(p.segment) : ""}</div></div></div>`;
+          if (p.quote) html += `<div class="pdf-quote">${esc(p.quote.replace(/^"|"$/g, ""))}</div>`;
+          if (p.identity) html += `<div class="pdf-kv"><span class="pdf-k">Who They Are</span><span class="pdf-v">${esc(p.identity)}</span></div>`;
+          if (p.meters) {
+            const m = p.meters;
+            const meter = (k, v) => `<div class="pdf-meter"><span class="pdf-meter-k">${k}</span><span class="pdf-meter-track"><span class="pdf-meter-fill" style="width:${v}%"></span></span></div>`;
+            html += `<div class="pdf-meters">${meter("Tech Savviness", m.tech_savviness)}${meter("Price Sensitivity", m.price_sensitivity)}${meter("Planning Style", m.planning_style)}${meter("Support Need", m.support_need)}${meter("Advocacy Potential", m.advocacy_potential)}</div>`;
+          }
+          const attr = (k, label, cls) => (p[k]?.length ? `<div class="pdf-attr ${cls}"><span class="pdf-attr-k">${label}</span><ul>${p[k].map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : "");
+          html += `<div class="pdf-attr-grid">`;
+          html += attr("motivations", "Motivations", "motiv") + attr("goals", "Goals", "goal") + attr("pain_points", "Pain Points", "pain") + attr("expectations", "Expectations", "expect") + attr("journey_risks", "Journey Risks", "pain") + attr("key_emotional_drivers", "Emotional Drivers", "emote");
+          html += `</div>`;
           const kv = (k, label) => (p[k] ? `<div class="pdf-kv"><span class="pdf-k">${label}</span><span class="pdf-v">${esc(p[k])}</span></div>` : "");
-          html += kv("accessibility_needs", "Accessibility") + kv("digital_behaviour", "Digital Behaviour") + kv("visit_behaviour", "Visit Behaviour") + kv("spending_behaviour", "Spending") + kv("success_definition", "Success Definition");
+          html += kv("accessibility_needs", "Accessibility Needs") + kv("digital_behaviour", "Digital Behaviour") + kv("visit_behaviour", "Visit Behaviour") + kv("spending_behaviour", "Spending Behaviour");
+          if (p.success_definition) html += `<div class="pdf-success"><span class="pdf-attr-k">What Success Looks Like</span><span>${esc(p.success_definition)}</span></div>`;
           if (p.preferred_channels?.length) html += `<div class="pdf-kv"><span class="pdf-k">Channels</span><span class="pdf-chips">${p.preferred_channels.map(c => `<span class="pdf-chip">${esc(c)}</span>`).join("")}</span></div>`;
           html += `</div>`;
         });
@@ -1036,7 +1065,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
       } else if (personaData?.long_list) {
         html += `<div class="pdf-section"><div class="pdf-h2">Candidate Personas</div>`;
         personaData.long_list.forEach(p => {
-          html += `<div class="pdf-card"><div class="pdf-card-name">${esc(p.name)}${p.pod_flag ? " · POD" : ""}</div><div class="pdf-card-sub">${esc(p.archetype)} · ${esc(p.tier)}</div>`;
+          html += `<div class="pdf-card"><div class="pdf-card-name">${p.given_name ? esc(p.given_name) + " — " : ""}${esc(p.name)}${p.pod_flag ? " · POD" : ""}</div><div class="pdf-card-sub">${esc(p.archetype)} · ${esc(p.tier)}</div>`;
           if (p.description) html += `<div class="pdf-kv"><span class="pdf-k">Description</span><span class="pdf-v">${esc(p.description)}</span></div>`;
           html += `<div class="pdf-kv"><span class="pdf-k">Motivation</span><span class="pdf-v">${esc(p.motivation)}</span></div>`;
           html += `<div class="pdf-kv"><span class="pdf-k">Strategic Value</span><span class="pdf-v">${esc(p.strategic_value)}</span></div>`;
