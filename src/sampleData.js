@@ -433,24 +433,45 @@ export function buildSampleFullPersonas(selected, sectorId) {
   const lib = SECTORS[key];
   const fz = lib.frictionZones.map((z) => z.zone);
 
-  const personas = selected.map((p) => ({
-    id: p.id, name: p.name, archetype: p.archetype, tier: p.tier, segment: p.segment,
-    identity: p.description || `${p.archetype} visiting as part of the ${p.tier} group.`,
-    motivations: [p.motivation, p.secondary_motivation].filter(Boolean),
-    goals: ["Complete the visit feeling it was worthwhile", `Avoid the sector's known friction (${fz[0]})`, "Find the moments that matter to them"],
-    pain_points: [fz[0], fz[1] || "Queues at peak times", p.pod_flag ? "Inaccessible or unmarked routes" : "Fatigue without rest options"],
-    expectations: ["Be welcomed and oriented quickly", "Clear, honest information", "Service that anticipates needs"],
-    accessibility_needs: p.pod_flag ? "Step-free routing, frequent rest points, sensory-aware spaces and proactive staff assistance." : "Standard access with clear signage and seating available.",
-    digital_behaviour: "Checks the website/app before visiting; uses mobile for maps, schedules and information on site.",
-    visit_behaviour: p.pod_flag ? "Planned, companion-supported visit with pre-checked routes and frequent rest stops." : "Semi-planned visit, open to discovery but values a clear spine route.",
-    spending_behaviour: "Moderate spend on F&B and themed retail when it feels coherent with the experience; price-sensitive on generic merchandise.",
-    journey_risks: ["A poor arrival setting a negative tone", p.pod_flag ? "An accessibility barrier mid-visit" : `Hitting the sector's main friction zone (${fz[0]})`],
-    success_definition: p.pod_flag ? "Completed the full visit independently and with dignity, no barriers encountered." : "Left feeling the visit was enjoyable, easy and worth recommending.",
-    preferred_channels: ["Website", "Mobile app", "On-site staff"],
-    key_emotional_drivers: ["Feeling welcome", "Confidence / being in control", p.pod_flag ? "Dignity" : "Delight"],
-    strategic_classification: p.classification || "Primary",
-    pod_flag: !!p.pod_flag,
-  }));
+  const personas = selected.map((p) => {
+    const podQuote = "\"I just need to know, before I arrive, that I can get round safely and with dignity — then I can actually enjoy it.\"";
+    const vipQuote = "\"Look after the details so I don't have to think about them — that's what premium means to me.\"";
+    const familyQuote = "\"A good day is when everyone's happy, no one's melting down, and it felt worth what I paid.\"";
+    const genericQuote = `\"I'm here for ${(p.motivation || "a great experience").toLowerCase()} — make it easy and I'll come back.\"`;
+    const vip = (p.tier || "").includes("VIP") || (p.tier || "").includes("VVIP");
+    const isFamily = /family/i.test(p.segment || "") || /family|organiser|organizer/i.test(p.name || "");
+    const quote = p.pod_flag ? podQuote : vip ? vipQuote : isFamily ? familyQuote : genericQuote;
+
+    // 0-100 meters for a visual, glanceable persona profile
+    const meters = {
+      tech_savviness: vip ? 70 : p.pod_flag ? 65 : 80,
+      price_sensitivity: vip ? 25 : isFamily ? 80 : 55,
+      planning_style: p.pod_flag ? 90 : isFamily ? 75 : 45, // high = highly planned, low = spontaneous
+      support_need: p.pod_flag ? 90 : vip ? 70 : 35,
+      advocacy_potential: p.pod_flag ? 85 : vip ? 60 : 70,
+    };
+
+    return {
+      id: p.id, name: p.name, archetype: p.archetype, tier: p.tier, segment: p.segment,
+      quote,
+      meters,
+      identity: p.description || `${p.archetype} visiting as part of the ${p.tier} group.`,
+      motivations: [p.motivation, p.secondary_motivation].filter(Boolean),
+      goals: ["Complete the visit feeling it was worthwhile", `Avoid the sector's known friction (${fz[0]})`, "Find the moments that matter to them"],
+      pain_points: [fz[0], fz[1] || "Queues at peak times", p.pod_flag ? "Inaccessible or unmarked routes" : "Fatigue without rest options"],
+      expectations: ["Be welcomed and oriented quickly", "Clear, honest information", "Service that anticipates needs"],
+      accessibility_needs: p.pod_flag ? "Step-free routing, frequent rest points, sensory-aware spaces and proactive staff assistance." : "Standard access with clear signage and seating available.",
+      digital_behaviour: "Checks the website/app before visiting; uses mobile for maps, schedules and information on site.",
+      visit_behaviour: p.pod_flag ? "Planned, companion-supported visit with pre-checked routes and frequent rest stops." : "Semi-planned visit, open to discovery but values a clear spine route.",
+      spending_behaviour: "Moderate spend on F&B and themed retail when it feels coherent with the experience; price-sensitive on generic merchandise.",
+      journey_risks: ["A poor arrival setting a negative tone", p.pod_flag ? "An accessibility barrier mid-visit" : `Hitting the sector's main friction zone (${fz[0]})`],
+      success_definition: p.pod_flag ? "Completed the full visit independently and with dignity, no barriers encountered." : "Left feeling the visit was enjoyable, easy and worth recommending.",
+      preferred_channels: ["Website", "Mobile app", "On-site staff"],
+      key_emotional_drivers: ["Feeling welcome", "Confidence / being in control", p.pod_flag ? "Dignity" : "Delight"],
+      strategic_classification: p.classification || "Primary",
+      pod_flag: !!p.pod_flag,
+    };
+  });
 
   const comparison_matrix = selected.map((p) => ({
     id: p.id, persona: p.name, motivation: p.motivation,
@@ -491,6 +512,11 @@ export function buildSampleJourneys(personas, templateUsed, sectorId) {
       post_visit: [1, 4, 1, 2, 2, 4],
     }[stageKey];
     const s = [...base];
+    // Vary delight/pain per touchpoint so the emotional curve has real peaks & dips.
+    // Even touchpoints lift delight; odd ones add a little friction — clamped 1-5.
+    const wave = [0, -1, 1, 0, 1, -1][idx % 6];
+    s[1] = Math.max(1, Math.min(5, s[1] + (wave > 0 ? 0 : wave))); // delight dips on friction points
+    s[0] = Math.max(1, Math.min(5, s[0] + (wave < 0 ? 1 : 0)));    // pain rises on friction points
     if (vip && stageKey === "arrival") s[1] = 5; // VIP delight at arrival
     if (idx === 0 && (stageKey === "arrival" || stageKey === "core_experience")) s[5] = 5;
     return s;
@@ -505,7 +531,15 @@ export function buildSampleJourneys(personas, templateUsed, sectorId) {
         summary: stageSummary(stageKey, lib, p),
         touchpoints: tps.map(([name, channel, emotion], idx) => {
           const [pain, delight, risk, acc, ops, prio] = scoreFor(stageKey, idx, pod, vip);
-          return { name, stage: stageKey, channel, emotion, pain_level: pain, delight_level: delight, risk_level: risk, accessibility_impact: acc, operational_complexity: ops, priority_score: prio };
+          // sentiment 0-100 for the emotional curve: delight lifts it, pain/risk pull it down
+          const sentiment = Math.max(8, Math.min(96, Math.round(50 + (delight - 3) * 18 - (pain - 2) * 10 - (risk - 2) * 6)));
+          return {
+            name, stage: stageKey, channel, emotion,
+            emotion_line: emotionLine(name, emotion, p, sentiment),
+            sentiment,
+            pain_level: pain, delight_level: delight, risk_level: risk,
+            accessibility_impact: acc, operational_complexity: ops, priority_score: prio,
+          };
         }),
       };
     });
@@ -545,4 +579,35 @@ function stageSummary(stageKey, lib, p) {
     post_visit: "Turning a good visit into loyalty, advocacy and a return.",
   };
   return map[stageKey];
+}
+
+// Turn a single emotion word + touchpoint into an impactful, layman-friendly one-liner.
+function emotionLine(name, emotion, p, sentiment) {
+  const who = (p.name || "The visitor").split(" ")[0];
+  const mood = sentiment >= 70 ? "high" : sentiment >= 45 ? "neutral" : "low";
+  const lib = {
+    anticipation: `${who} is excited and building expectations — this is where the relationship starts.`,
+    commitment: `${who} commits time and money here — confidence must be earned, not assumed.`,
+    strategising: `${who} is planning the visit in their head — clarity now prevents confusion later.`,
+    curiosity: `${who} is exploring options — make it effortless to picture the experience.`,
+    excitement: `Anticipation peaks — ${who} arrives primed to be impressed.`,
+    transition: `${who} is in transit and a little tense — smooth logistics protect the mood.`,
+    compliance: `A necessary checkpoint — handle it warmly so it doesn't feel like a barrier.`,
+    "getting bearings": `${who} is deciding where to go first — strong orientation sets the tone.`,
+    absorption: `${who} is fully immersed — this is the emotional high point of the whole visit.`,
+    supported: `A human moment — the right help here turns satisfaction into loyalty.`,
+    relief: `${who} pauses to recover — rest here is what makes the second half enjoyable.`,
+    reflection: `${who} forms a lasting memory — the final impression outweighs the average.`,
+    warmth: `A genuine goodbye — ${who} leaves feeling valued, not processed.`,
+    enthusiastic: `${who} is ready to recommend you — capture and amplify this moment.`,
+    "collective euphoria": `The shared peak everyone came for — protect it at all costs.`,
+    "rushed refuel": `A high-pressure rush — relieve the crush before it sours the mood.`,
+    "ingress tension": `Make-or-break entry — calm, fast flow here decides the whole day.`,
+  };
+  const fallback = mood === "high"
+    ? `${who} feels ${emotion} — a moment of genuine delight worth designing around.`
+    : mood === "low"
+      ? `${who} feels ${emotion} — a fragile moment where small failures do real damage.`
+      : `${who} feels ${emotion} — a pivotal step that quietly shapes the overall impression.`;
+  return lib[(emotion || "").toLowerCase()] || fallback;
 }
