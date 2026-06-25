@@ -885,9 +885,23 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
     .pdf-persona-head { display: flex; align-items: center; margin-bottom: 6px; }
     .pdf-bar-row { display: flex; align-items: center; gap: 8px; margin: 3px 0; font-size: 10px; }
     .pdf-bar-k { min-width: 96px; color: #6B7280; font-weight: 600; }
-    .pdf-bar-track { flex: 1; height: 7px; background: #EEF0F4; border-radius: 4px; overflow: hidden; }
-    .pdf-bar-fill { height: 100%; border-radius: 4px; }
+    .pdf-bar-track { flex: 1; height: 8px; background: #EEF0F4; border-radius: 6px; overflow: hidden; display: block; }
+    .pdf-bar-fill { display: block; height: 8px; border-radius: 6px; }
     .pdf-bar-v { min-width: 42px; text-align: right; font-weight: 700; }
+    .pdf-tp { margin: 8px 0 12px; padding: 10px 12px; border: 1px solid #ECECF6; border-left: 3px solid #C7D2FE; border-radius: 8px; background: #FBFBFE; page-break-inside: avoid; }
+    .pdf-tp-name { font-weight: 700; font-size: 12px; color: #1E1B4B; }
+    .pdf-tp-channel { font-size: 9px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #4F46E5; background: #EEF0FF; border: 1px solid #D9DBFA; padding: 2px 8px; border-radius: 20px; margin-left: 6px; }
+    .pdf-tp-line { font-size: 11px; color: #3F3D56; margin: 6px 0 8px; line-height: 1.45; }
+    .pdf-bar-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 20px; }
+    .pdf-curve { border: 1px solid #ECECF6; border-radius: 10px; padding: 12px 14px; margin: 8px 0 14px; background: #FBFBFE; page-break-inside: avoid; }
+    .pdf-curve-title { font-size: 12px; font-weight: 700; color: #1E1B4B; margin-bottom: 2px; }
+    .pdf-curve-sub { font-size: 10px; color: #6B7280; margin-bottom: 8px; }
+    .pdf-curve svg { display: block; width: 100%; height: 70px; }
+    .pdf-curve-labels { display: flex; justify-content: space-between; margin-top: 4px; gap: 4px; }
+    .pdf-curve-lbl { font-size: 8px; color: #6B7280; flex: 1; text-align: center; }
+    .pdf-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 20px; margin: 6px 0 12px; font-size: 10px; }
+    .pdf-legend div { color: #475569; }
+    .pdf-legend strong { color: #1E1B4B; }
   `;
 
   const renderPdfFromHtml = (innerHtml, title) => {
@@ -1040,7 +1054,9 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
     setPdfBusy("journey");
     try {
       const STAGE_LABELS = { pre_visit: "Pre-Visit", arrival: "Arrival", core_experience: "Core Experience", exit_departure: "Exit & Departure", post_visit: "Post-Visit" };
+      const barColor = (lvl, invert) => (invert ? (lvl === "High" ? "#16A34A" : lvl === "Med" ? "#D97706" : "#94A3B8") : (lvl === "High" ? "#DC2626" : lvl === "Med" ? "#D97706" : "#16A34A"));
       let html = `<div class="pdf-head"><div class="pdf-eyebrow">Stage 4 Output</div><div class="pdf-title">Journey Maps, Moments of Truth & KPIs</div><div class="pdf-sub">${journeyData.journeys.length} persona journeys</div></div>`;
+      html += `<div class="pdf-legend"><div><strong>Pain</strong> — how frustrating the step is (lower is better)</div><div><strong>Delight</strong> — how positive it feels (higher is better)</div><div><strong>Risk</strong> — chance it goes wrong (lower is better)</div><div><strong>Access. Barrier</strong> — difficulty for accessibility needs (lower is better)</div><div><strong>Ops Effort</strong> — staff effort to run it well (lower is easier)</div><div><strong>Priority</strong> — how important to get right (higher = focus here)</div></div>`;
       journeyData.journeys.forEach(j => {
         html += `<div class="pdf-section"><div class="pdf-h2">${esc(j.persona_name)} — Journey Map</div>`;
         Object.keys(STAGE_LABELS).forEach(sk => {
@@ -1048,12 +1064,30 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
           if (!st) return;
           html += `<div class="pdf-card"><div class="pdf-card-sub">${esc(STAGE_LABELS[sk])}</div>`;
           if (st.summary) html += `<div class="pdf-v" style="margin-bottom:8px">${esc(st.summary)}</div>`;
-          (st.touchpoints || []).forEach(tp => {
-            html += `<div style="margin:6px 0 10px;padding-left:8px;border-left:3px solid #C7D2FE"><div style="font-weight:700;font-size:12px">${esc(tp.name)} <span style="color:#6366F1;font-weight:600">${esc(tp.channel)}</span></div>`;
-            if (tp.emotion_line || tp.emotion) html += `<div style="font-size:11px;color:#6B7280;font-style:italic">${esc(tp.emotion_line || tp.emotion)}</div>`;
-            const bar = (label, n, invert) => { const lvl = HML(n); return `<div class="pdf-bar-row"><span class="pdf-bar-k">${label}</span><span class="pdf-bar-track"><span class="pdf-bar-fill" style="width:${hmlPct(lvl)}%;background:${hmlColor(lvl, invert)}"></span></span><span class="pdf-bar-v" style="color:${hmlColor(lvl, invert)}">${lvl}</span></div>`; };
-            html += bar("Pain", tp.pain_level) + bar("Delight", tp.delight_level, true) + bar("Risk", tp.risk_level) + bar("Access. Impact", tp.accessibility_impact) + bar("Ops Complexity", tp.operational_complexity) + `<div class="pdf-bar-row"><span class="pdf-bar-k">Priority</span><span class="pdf-bar-track"><span class="pdf-bar-fill" style="width:${hmlPct(HML(tp.priority_score))}%;background:#4F46E5"></span></span><span class="pdf-bar-v" style="color:#4F46E5">${HML(tp.priority_score)}</span></div>`;
-            html += `</div>`;
+
+          // Emotional curve for this stage
+          const tps = st.touchpoints || [];
+          if (tps.some(t => t.sentiment != null)) {
+            const pts = tps.map(t => t.sentiment ?? 50);
+            const n = pts.length, W = 100, H = 40;
+            const xy = pts.map((s, i) => [n === 1 ? W / 2 : (i / (n - 1)) * W, H - (s / 100) * H]);
+            const path = xy.map((p, i) => `${i === 0 ? "M" : "L"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
+            const area = `${path} L${W},${H} L0,${H} Z`;
+            html += `<div class="pdf-curve"><div class="pdf-curve-title">Emotional Curve</div><div class="pdf-curve-sub">How the visitor feels across this stage — peaks are delight, dips are friction</div>`;
+            html += `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><defs><linearGradient id="g_${j.persona_id}_${sk}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7C3AED" stop-opacity="0.28"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="0.03"/></linearGradient></defs>`;
+            html += `<path d="${area}" fill="url(#g_${j.persona_id}_${sk})"/><path d="${path}" fill="none" stroke="#6D28D9" stroke-width="1.4" vector-effect="non-scaling-stroke"/>`;
+            html += xy.map(p => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="1.8" fill="#6D28D9" vector-effect="non-scaling-stroke"/>`).join("");
+            html += `</svg><div class="pdf-curve-labels">${tps.map(t => `<span class="pdf-curve-lbl">${esc(t.name)}</span>`).join("")}</div></div>`;
+          }
+
+          tps.forEach(tp => {
+            html += `<div class="pdf-tp"><div><span class="pdf-tp-name">${esc(tp.name)}</span><span class="pdf-tp-channel">${esc(tp.channel)}</span></div>`;
+            if (tp.emotion_line || tp.emotion) html += `<div class="pdf-tp-line">${esc(tp.emotion_line || tp.emotion)}</div>`;
+            const bar = (label, n, invert) => { const lvl = HML(n); const c = barColor(lvl, invert); return `<div class="pdf-bar-row"><span class="pdf-bar-k">${label}</span><span class="pdf-bar-track"><span class="pdf-bar-fill" style="width:${hmlPct(lvl)}%;background:${c}"></span></span><span class="pdf-bar-v" style="color:${c}">${lvl}</span></div>`; };
+            html += `<div class="pdf-bar-grid">`;
+            html += bar("Pain", tp.pain_level) + bar("Delight", tp.delight_level, true) + bar("Risk", tp.risk_level) + bar("Access. Barrier", tp.accessibility_impact) + bar("Ops Effort", tp.operational_complexity);
+            html += `<div class="pdf-bar-row"><span class="pdf-bar-k">Priority</span><span class="pdf-bar-track"><span class="pdf-bar-fill" style="width:${hmlPct(HML(tp.priority_score))}%;background:#4F46E5"></span></span><span class="pdf-bar-v" style="color:#4F46E5">${HML(tp.priority_score)}</span></div>`;
+            html += `</div></div>`;
           });
           html += `</div>`;
         });
