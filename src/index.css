@@ -24,11 +24,11 @@
 * { box-sizing: border-box; }
 
 html, body {
-  margin: 0; padding: 0; width: 100%; min-height: 100vh;
+  margin: 0; padding: 0; width: 100%;
   -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
   background: linear-gradient(160deg, #EEF0FA 0%, #F4F5FB 45%, #F7F5FC 100%);
 }
-#root { width: 100%; min-height: 100vh; }
+#root { width: 100%; }
 
 /* ====================================================================
    1. FONT UNIFORMITY — everything sans (Inter); only display = Syne.
@@ -485,12 +485,26 @@ input:focus, textarea:focus, select:focus { border-color: var(--vx-indigo) !impo
    ============================================================ */
 
 html, body { height: 100%; overflow: hidden; }   /* page itself never scrolls */
-#root { height: 100dvh; overflow: hidden; }
+#root { height: 100dvh; max-height: 100dvh; overflow: hidden; }
 
+/* Outer inline-styled wrapper: strict full-viewport box, no scroll, no centering offset */
+#root > div {
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+
+/* Shell fills the wrapper exactly and lays out its rows */
 .vx-shell {
   width: 100% !important;
-  max-width: 1500px !important;          /* full dashboard width */
-  height: 100dvh !important;
+  max-width: 1500px !important;
+  height: 100% !important;
+  max-height: 100dvh !important;
   min-height: 0 !important;
   margin: 0 auto !important;
   border-radius: 0 !important;
@@ -499,12 +513,13 @@ html, body { height: 100%; overflow: hidden; }   /* page itself never scrolls */
   overflow: hidden !important;
 }
 
-/* Fixed header layers — do not shrink, do not scroll */
+/* Fixed header + footer layers — do not shrink, do not scroll */
 .vx-topbar { flex: 0 0 auto !important; }
 .vx-progress-wrap { flex: 0 0 auto !important; }
+.vx-nav { flex: 0 0 auto !important; }
 
-/* Body fills the rest; it is the boundary for the scroll area */
-.vx-body { flex: 1 1 auto !important; min-height: 0 !important; overflow: hidden !important; display: flex !important; }
+/* Body fills the remaining space between header and footer; it can shrink */
+.vx-body { flex: 1 1 auto !important; min-height: 0 !important; height: auto !important; overflow: hidden !important; display: flex !important; }
 
 /* Left nav: full height of the body, scrolls only if ITS OWN content overflows */
 .vx-sidebar {
@@ -512,10 +527,10 @@ html, body { height: 100%; overflow: hidden; }   /* page itself never scrolls */
   height: 100% !important;
   max-height: 100% !important;
   overflow-y: auto !important;
-  position: static !important;   /* no longer needs sticky; the body is fixed */
+  position: static !important;
 }
 
-/* Right panel: the ONLY scrolling region */
+/* Right panel: the ONLY large scrolling region */
 .vx-main {
   flex: 1 1 auto !important;
   height: 100% !important;
@@ -536,14 +551,6 @@ html, body { height: 100%; overflow: hidden; }   /* page itself never scrolls */
 @media (max-width: 860px) {
   .vx-sidebar { position: fixed !important; z-index: 50; transform: translateX(-100%); }
   .vx-sidebar.mobile-open { transform: translateX(0); }
-}
-
-/* Outer wrapper (inline-styled) must also be a fixed, non-scrolling frame */
-#root > div {
-  min-height: 0 !important;
-  height: 100dvh !important;
-  overflow: hidden !important;
-  align-items: stretch !important;
 }
 
 /* ============================================================
