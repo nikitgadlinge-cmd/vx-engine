@@ -396,7 +396,6 @@ Required top-level keys and shapes:
       setBriefData(parsed);
       setBriefOpenSections(Object.fromEntries(Object.keys(parsed).map((k, i) => [k, i === 0])));
       setAiOutput(JSON.stringify(parsed, null, 2));
-      scrollToOutput(briefOutRef);
     } catch (err) {
       setAiError(err.message);
       console.error("Brief generation error:", err);
@@ -474,7 +473,6 @@ Required JSON shape:
 
       setBenchmarkData(parsed);
       setActiveBenchmarkCategory(BENCHMARK_CATEGORIES[0].key);
-      scrollToOutput(benchmarkOutRef);
       const initCards = {};
       BENCHMARK_CATEGORIES.forEach(c => {
         (parsed[c.key] || []).forEach((_, i) => { initCards[`${c.key}-${i}`] = false; });
@@ -677,7 +675,6 @@ Required JSON shape:
       await wait(FAKE_DELAY);
       const parsed = buildSamplePersonaLongList({ sectorId: briefData?.sector_context?.sector_id || selectedSector?.id, sector: briefData?.sector_context?.sector || selectedSector?.label, selectedTiers: (briefData?.stakeholder_map?.active_tiers || shTiers || []) });
       setPersonaData(parsed);
-      scrollToOutput(personaOutRef);
       // seed selections from recommended defaults
       const seed = {};
       (parsed.long_list || []).forEach(p => { seed[p.id] = p.recommended_default || "include"; });
@@ -755,7 +752,6 @@ Required JSON shape:
       await wait(FAKE_DELAY);
       const parsed = buildSampleFullPersonas(payload.selected_personas, briefData?.sector_context?.sector_id || selectedSector?.id);
       setFullPersonas(parsed);
-      scrollToOutput(personaOutRef);
       const cards = {};
       (parsed.personas || []).forEach((p, i) => { cards[p.id] = i === 0; });
       setFullPersonaOpenCards(cards);
@@ -789,10 +785,11 @@ Required JSON shape:
 
   // Tick an elapsed-seconds counter whenever a generation is in flight
   const anyGenLoading = personaLoading || fullPersonaLoading || journeyLoading;
-  // Whenever the active step changes, reset the right panel to its top
+  // Reset the right panel to its top ONLY when the screen is replaced
+  // (changing intake step, or switching output stage). Never on generate.
   useEffect(() => {
     try { mainPanelRef.current?.scrollTo({ top: 0, behavior: "auto" }); } catch (e) {}
-  }, [current]);
+  }, [current, unlockedStage]);
 
   // On load, if outputs already exist (returning user), unlock up to the furthest generated stage
   // so their content isn't hidden behind Proceed buttons they already passed.
@@ -888,7 +885,6 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
       await wait(FAKE_DELAY);
       const parsed = buildSampleJourneys(fullPersonas.personas, payload.template_used, briefData?.sector_context?.sector_id || selectedSector?.id);
       setJourneyData(parsed);
-      scrollToOutput(journeyOutRef);
       const first = parsed.journeys?.[0]?.persona_id || null;
       setActiveJourneyPersona(first);
       setActiveJourneyStage(0);
@@ -3955,23 +3951,26 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                         })
                       ) : (
                         (g.subItems || []).map((sub, si) => {
-                          const stageUnlocked = unlockedStage >= g.n;
+                          // A stage is reachable if the user has progressed at least that far.
+                          const maxReached = journeyData ? 4 : (fullPersonas?.personas?.length > 0) ? 4 : benchmarkData ? 3 : briefData ? 2 : 1;
+                          const stageReachable = g.n <= Math.max(unlockedStage, maxReached);
+                          const onThisStage = current === 8 && unlockedStage === g.n;
                           return (
                             <div
                               key={si}
-                              className={`vx-nav-item ${stageUnlocked ? "" : "locked"} ${outputReady && si === 0 ? "done" : ""}`}
+                              className={`vx-nav-item ${onThisStage && si === 0 ? "active" : ""} ${stageReachable ? "" : "locked"}`}
                               onClick={() => {
-                                if (!stageUnlocked) return;
+                                if (!stageReachable) return;
                                 setCurrent(8);
+                                setUnlockedStage(g.n);   // screen replacement: switch to this stage
                                 setSidebarOpen(false);
                                 // Stage 4 sub-views are tabs — switch the tab where relevant
                                 if (sub.anchor === "anchor-journey-mot") setJourneySubView("mot");
                                 else if (sub.anchor === "anchor-journey-kpi") setJourneySubView("kpi");
                                 else if (sub.anchor === "anchor-journey-maps") setJourneySubView("journey");
-                                scrollToAnchor(sub.anchor === "anchor-journey-mot" || sub.anchor === "anchor-journey-kpi" ? "anchor-journey-maps" : sub.anchor);
                               }}
                             >
-                              <span className="vx-nav-mark">{!stageUnlocked ? "🔒" : outputReady ? "✓" : "●"}</span>
+                              <span className="vx-nav-mark">{!stageReachable ? "🔒" : outputReady ? "✓" : "●"}</span>
                               <span className="vx-nav-label">{sub.label}</span>
                             </div>
                           );
@@ -5106,6 +5105,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
 
                 return (
                   <div>
+                    {unlockedStage === 1 && (<>
                     <div className="vx-placeholder-eyebrow">Step 9 of 9 · ◇ Review</div>
                     <div className="vx-placeholder-title">Review & Generate</div>
                     <div className="vx-placeholder-body" style={{ marginBottom: 22 }}>
@@ -5354,15 +5354,16 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
 
                       {briefData && unlockedStage === 1 && (
                         <div className="stage-proceed">
-                          <button className="stage-proceed-btn" onClick={() => { setUnlockedStage(2); scrollToOutput(benchmarkOutRef); }}>
+                          <button className="stage-proceed-btn" onClick={() => setUnlockedStage(2)}>
                             Proceed to Next Stage — Benchmark Intelligence →
                           </button>
                         </div>
                       )}
                     </div>
+                    </>)}
 
                     {/* Stage 2 — Benchmark Intelligence */}
-                    {briefData && unlockedStage >= 2 && (
+                    {unlockedStage === 2 && (
                       <div id="anchor-benchmark">
                         <button className="bm-trigger-btn" onClick={handleRunBenchmark} disabled={benchmarkLoading}>
                           {benchmarkLoading ? <><span className="bm-spinner" /> Running Analysis for Global Leading Practices…</> : <>◈ Run Analysis for Global Leading Practices</>}
@@ -5484,7 +5485,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
 
                         {benchmarkData && unlockedStage === 2 && (
                           <div className="stage-proceed">
-                            <button className="stage-proceed-btn" onClick={() => { setUnlockedStage(3); scrollToOutput(personaOutRef); }}>
+                            <button className="stage-proceed-btn" onClick={() => setUnlockedStage(3)}>
                               Proceed to Next Stage — Persona Synthesis →
                             </button>
                           </div>
@@ -5495,7 +5496,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                     {/* ══════════════════════════════════════════════ */}
                     {/* Stage 3 — Visitor Persona Synthesis           */}
                     {/* ══════════════════════════════════════════════ */}
-                    {benchmarkData && unlockedStage >= 3 && (
+                    {unlockedStage === 3 && (
                       <div id="anchor-persona">
                         <button className="bm-trigger-btn" onClick={handleGeneratePersonaLongList} disabled={personaLoading}>
                           {personaLoading ? <><span className="bm-spinner" /> Generating Visitor Persona Long List… {fmtElapsed(genElapsed)}</> : <>◍ Stage 3: Generate Visitor Persona Long List for Selection</>}
@@ -5743,7 +5744,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
 
                         {fullPersonas?.personas?.length > 0 && unlockedStage === 3 && (
                           <div className="stage-proceed">
-                            <button className="stage-proceed-btn" onClick={() => { setUnlockedStage(4); scrollToOutput(journeyOutRef); }}>
+                            <button className="stage-proceed-btn" onClick={() => setUnlockedStage(4)}>
                               Proceed to Stage 4 — Journey Intelligence →
                             </button>
                           </div>
@@ -5754,7 +5755,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                     {/* ══════════════════════════════════════════════ */}
                     {/* Stage 4 — Journey Mapping, MoT & KPI Framework */}
                     {/* ══════════════════════════════════════════════ */}
-                    {fullPersonas?.personas?.length > 0 && unlockedStage >= 4 && (
+                    {unlockedStage === 4 && (
                       <div style={{marginTop:18}} id="anchor-journey">
                         <button className="bm-trigger-btn" onClick={handleGenerateJourneys} disabled={journeyLoading}>
                           {journeyLoading ? <><span className="bm-spinner" /> Mapping Journeys, Moments of Truth & KPIs… {fmtElapsed(genElapsed)}</> : <>◆ Generate Stage 4 · Journey Maps, MoT & KPI Framework</>}
