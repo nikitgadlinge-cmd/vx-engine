@@ -499,15 +499,19 @@ Required JSON shape:
   const abortRef = useRef(null);
   const manualCancelRef = useRef(false);
   // Refs to scroll the freshly-generated stage output to the top of the viewport
+  const mainPanelRef = useRef(null);
   const briefOutRef = useRef(null);
   const benchmarkOutRef = useRef(null);
   const personaOutRef = useRef(null);
   const journeyOutRef = useRef(null);
   const scrollToOutput = (ref) => {
-    // Wait for the new content to render, then bring its top into view
+    // Each stage should open at the very top of the right panel
     setTimeout(() => {
-      try { ref.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
-    }, 120);
+      try {
+        if (mainPanelRef.current) mainPanelRef.current.scrollTo({ top: 0, behavior: "smooth" });
+        else ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch (e) {}
+    }, 130);
   };
   const [genElapsed, setGenElapsed] = useState(0);
 
@@ -758,6 +762,11 @@ Required JSON shape:
 
   // Tick an elapsed-seconds counter whenever a generation is in flight
   const anyGenLoading = personaLoading || fullPersonaLoading || journeyLoading;
+  // Whenever the active step changes, reset the right panel to its top
+  useEffect(() => {
+    try { mainPanelRef.current?.scrollTo({ top: 0, behavior: "auto" }); } catch (e) {}
+  }, [current]);
+
   // On load, if outputs already exist (returning user), unlock up to the furthest generated stage
   // so their content isn't hidden behind Proceed buttons they already passed.
   useEffect(() => {
@@ -3946,7 +3955,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
           </aside>
 
           {/* Main */}
-          <main className="vx-main">
+          <main className="vx-main" ref={mainPanelRef}>
             <div className="vx-content">
 
               {/* Welcome — Executive Program Dashboard */}
@@ -5595,8 +5604,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
 
                               <div className="bm-panel">
                                 {personas.map((p, pIdx) => {
-                                  const noneToggled = Object.keys(fullPersonaOpenCards).length === 0;
-                                  const isOpen = noneToggled ? pIdx === 0 : !!fullPersonaOpenCards[p.id];
+                                  const isOpen = !!fullPersonaOpenCards[p.id];
                                   return (
                                     <div key={p.id} className={`bm-card ${isOpen ? "open" : ""}`}>
                                       <div className="bm-card-header" onClick={() => setFullPersonaOpenCards(pr => ({...pr, [p.id]: !pr[p.id]}))}>
