@@ -477,3 +477,71 @@ input:focus, textarea:focus, select:focus { border-color: var(--vx-indigo) !impo
   display: inline-block !important; width: auto !important;
   font-size: 13px !important; padding: 10px 22px !important; border-radius: 10px !important;
 }
+
+/* ============================================================
+   WORKSTREAM 1c — FIXED APP SHELL (frame static, content scrolls)
+   Topbar + progress + left nav never move; only the right panel
+   scrolls internally, like the reference dashboard.
+   ============================================================ */
+
+html, body { height: 100%; overflow: hidden; }   /* page itself never scrolls */
+#root { height: 100dvh; overflow: hidden; }
+
+.vx-shell {
+  width: 100% !important;
+  max-width: 1500px !important;          /* full dashboard width */
+  height: 100dvh !important;
+  min-height: 0 !important;
+  margin: 0 auto !important;
+  border-radius: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+/* Fixed header layers — do not shrink, do not scroll */
+.vx-topbar { flex: 0 0 auto !important; }
+.vx-progress-wrap { flex: 0 0 auto !important; }
+
+/* Body fills the rest; it is the boundary for the scroll area */
+.vx-body { flex: 1 1 auto !important; min-height: 0 !important; overflow: hidden !important; display: flex !important; }
+
+/* Left nav: full height of the body, scrolls only if ITS OWN content overflows */
+.vx-sidebar {
+  flex: 0 0 280px !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow-y: auto !important;
+  position: static !important;   /* no longer needs sticky; the body is fixed */
+}
+
+/* Right panel: the ONLY scrolling region */
+.vx-main {
+  flex: 1 1 auto !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scroll-behavior: smooth;
+}
+.vx-content { flex: 1; max-width: 1100px; margin: 0 auto; width: 100%; }
+
+/* Tighter, systematic typography so stages are compact */
+.vx-main { padding: 26px 34px !important; }
+.bo-title, .bm-title { font-size: 18px !important; }
+.stage-context-grid { gap: 8px 22px !important; padding: 12px 18px !important; }
+.stage-context-v { font-size: 12.5px !important; line-height: 1.45 !important; }
+.bm-meta-bar { padding: 10px 14px !important; }
+
+@media (max-width: 860px) {
+  .vx-sidebar { position: fixed !important; z-index: 50; transform: translateX(-100%); }
+  .vx-sidebar.mobile-open { transform: translateX(0); }
+}
+
+/* Outer wrapper (inline-styled) must also be a fixed, non-scrolling frame */
+#root > div {
+  min-height: 0 !important;
+  height: 100dvh !important;
+  overflow: hidden !important;
+  align-items: stretch !important;
+}
