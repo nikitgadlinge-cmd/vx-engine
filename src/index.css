@@ -352,3 +352,90 @@ input:focus, textarea:focus, select:focus { border-color: var(--vx-indigo) !impo
 .jm-legend-def strong { color: var(--vx-ink); font-weight: 700; }
 .jm-legend-def em { color: var(--vx-mute); font-style: italic; }
 @media (max-width: 720px) { .jm-legend-defs { grid-template-columns: minmax(0,1fr); } }
+
+/* ============================================================
+   WORKSTREAM 1 — DASHBOARD LAYOUT + STAGE-GROUPED LEFT NAV
+   ============================================================ */
+
+/* Sidebar shell → deep navy dashboard panel */
+.vx-sidebar {
+  background: #0F172A !important;
+  border-right: 1px solid #1E293B !important;
+  width: 280px !important;
+  padding: 18px 14px 14px !important;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.vx-nav-title {
+  font-family: 'Syne', sans-serif !important;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: #64748B; padding: 4px 8px 12px;
+}
+
+/* Stage group */
+.vx-stage-group { border-radius: 10px; margin-bottom: 4px; }
+.vx-stage-group.active { background: rgba(255,255,255,0.03); }
+.vx-stage-head {
+  display: flex; align-items: center; gap: 10px; padding: 9px 8px; cursor: pointer;
+  border-radius: 8px; border-left: 3px solid transparent; transition: background 0.15s;
+}
+.vx-stage-group.active .vx-stage-head { border-left-color: var(--stage-color); }
+.vx-stage-head:hover { background: rgba(255,255,255,0.04); }
+.vx-stage-badge {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #0F172A; font-weight: 800; font-size: 12px; font-family: 'Syne', sans-serif !important;
+}
+.vx-stage-badge.done { color: #fff; }
+.vx-stage-name { flex: 1; color: #E2E8F0; font-size: 13.5px; font-weight: 600; }
+.vx-stage-chev { color: #64748B; font-size: 11px; }
+
+/* Sub items */
+.vx-stage-items { padding: 2px 0 8px 14px; display: flex; flex-direction: column; gap: 1px; }
+.vx-nav-item {
+  display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 7px;
+  cursor: pointer; transition: background 0.12s;
+}
+.vx-nav-item:hover { background: rgba(255,255,255,0.05); }
+.vx-nav-item.active { background: rgba(255,255,255,0.10); }
+.vx-nav-mark { font-size: 11px; color: #475569; width: 14px; text-align: center; flex-shrink: 0; }
+.vx-nav-item.done .vx-nav-mark { color: #10B981; }
+.vx-nav-item.active .vx-nav-mark { color: #fff; }
+.vx-nav-item.locked { opacity: 0.45; cursor: not-allowed; }
+.vx-nav-label { font-size: 12.5px; color: #94A3B8; }
+.vx-nav-item.active .vx-nav-label { color: #fff; font-weight: 500; }
+.vx-nav-item.done .vx-nav-label { color: #CBD5E1; }
+
+/* Progress + export at bottom */
+.vx-nav-progress { margin-top: auto; padding: 14px 8px 8px; border-top: 1px solid #1E293B; }
+.vx-nav-progress-label { font-size: 11px; color: #94A3B8; font-weight: 600; margin-bottom: 8px; }
+.vx-nav-progress-track { height: 6px; background: #1E293B; border-radius: 999px; overflow: hidden; }
+.vx-nav-progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #6D28D9, #4F46E5); transition: width 0.4s ease; }
+.vx-nav-export {
+  width: 100%; margin-top: 12px; padding: 10px; border-radius: 9px; border: 1px solid #334155;
+  background: rgba(255,255,255,0.04); color: #E2E8F0; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  transition: all 0.15s;
+}
+.vx-nav-export:hover:not(:disabled) { background: rgba(79,70,229,0.25); border-color: #4F46E5; }
+.vx-nav-export:disabled { opacity: 0.4; cursor: not-allowed; }
+.vx-sidebar-footer { border-top: none !important; padding-top: 12px !important; }
+.vx-sidebar-footer p { color: #475569 !important; font-size: 9px !important; }
+
+/* Stage transition banner (top of each output) */
+.stage-context { border: 1px solid var(--vx-line); border-radius: 14px; overflow: hidden; padding: 0 !important; background: #fff !important; }
+.stage-context-banner {
+  display: flex; align-items: center; gap: 14px; padding: 12px 18px; color: #fff;
+}
+.stage-context-badge2 {
+  font-family: 'Syne', sans-serif !important; font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
+  background: rgba(255,255,255,0.22); padding: 4px 12px; border-radius: 999px;
+}
+.stage-context-bannername { font-family: 'Syne', sans-serif !important; font-size: 15px; font-weight: 700; flex: 1; }
+.stage-context-gate { font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.18); padding: 4px 12px; border-radius: 999px; }
+.stage-context-grid { padding: 16px 20px !important; }
+.stage-context-item .stage-context-k { color: var(--stage-color, var(--vx-indigo)) !important; }
+
+/* Mobile: nav becomes a slide-over */
+@media (max-width: 860px) {
+  .vx-sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 50; transform: translateX(-100%); transition: transform 0.2s; }
+  .vx-sidebar.mobile-open { transform: translateX(0); }
+}
