@@ -5,6 +5,7 @@ import {
   buildSamplePersonaLongList,
   buildSampleFullPersonas,
   buildSampleJourneys,
+  buildConsolidatedFramework,
 } from "./sampleData.js";
 
 const FAKE_DELAY = 1400; // ms — short "Generating…" pause so it feels real
@@ -789,6 +790,8 @@ Required JSON shape:
   // Strict sequential gating of the four output stages (1=intake/brief .. 4=journey).
   // A stage's section only appears once the user clicks "Proceed to Next Stage".
   const [unlockedStage, setUnlockedStage] = usePersisted("unlockedStage", 1);
+  // When true, the right panel shows the Consolidated Framework (own screen) instead of a stage.
+  const [showConsolidated, setShowConsolidated] = useState(false);
 
   // Reset the right panel to its top ONLY when the screen is replaced
   // (changing intake step, or switching output stage). Never on generate.
@@ -3915,7 +3918,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
             {/* Top-level: Executive Program Dashboard (landing screen) */}
             <div
               className={`vx-dashboard-nav ${current === 0 ? "active" : ""}`}
-              onClick={() => { setCurrent(0); setSidebarOpen(false); }}
+              onClick={() => { setCurrent(0); setShowConsolidated(false); setSidebarOpen(false); }}
             >
               <span className="vx-dashboard-icon">▦</span>
               <span className="vx-dashboard-label">Executive Program Dashboard</span>
@@ -3955,7 +3958,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                             <div
                               key={it.id}
                               className={`vx-nav-item ${active ? "active" : ""} ${done ? "done" : ""}`}
-                              onClick={() => { setCurrent(it.id); setSidebarOpen(false); }}
+                              onClick={() => { setCurrent(it.id); setShowConsolidated(false); setSidebarOpen(false); }}
                             >
                               <span className="vx-nav-mark">{done ? "✓" : active ? "●" : "○"}</span>
                               <span className="vx-nav-label">{it.label}</span>
@@ -3966,7 +3969,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                         {briefData && (
                           <div
                             className={`vx-nav-item ${current === 8 && unlockedStage === 1 ? "active" : ""} done`}
-                            onClick={() => { setCurrent(8); setUnlockedStage(1); setSidebarOpen(false); }}
+                            onClick={() => { setCurrent(8); setUnlockedStage(1); setShowConsolidated(false); setSidebarOpen(false); }}
                           >
                             <span className="vx-nav-mark">✓</span>
                             <span className="vx-nav-label">Experience Design Brief</span>
@@ -3987,6 +3990,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                                 if (!stageReachable) return;
                                 setCurrent(8);
                                 setUnlockedStage(g.n);   // screen replacement: switch to this stage
+                                setShowConsolidated(false);
                                 setSidebarOpen(false);
                                 // Stage 4 sub-views are tabs — switch the tab where relevant
                                 if (sub.anchor === "anchor-journey-mot") setJourneySubView("mot");
@@ -4005,6 +4009,19 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                 </div>
               );
             })}
+
+            {/* Consolidated Framework — cross-persona strategy layer */}
+            <div
+              className={`vx-dashboard-nav consolidated ${showConsolidated ? "active" : ""}`}
+              onClick={() => {
+                if (!journeyData) return;
+                setCurrent(8); setShowConsolidated(true); setSidebarOpen(false);
+              }}
+              style={{ opacity: journeyData ? 1 : 0.45, cursor: journeyData ? "pointer" : "not-allowed", marginTop: 8 }}
+            >
+              <span className="vx-dashboard-icon" style={{ background: "#0E7490" }}>◇</span>
+              <span className="vx-dashboard-label">{journeyData ? "Consolidated Framework" : "Consolidated (locked)"}</span>
+            </div>
 
             <div className="vx-nav-progress">
               <div className="vx-nav-progress-label">Journey Progress — {Math.round(overallProgress)}% Complete</div>
@@ -5129,7 +5146,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
 
                 return (
                   <div>
-                    {unlockedStage === 1 && (<>
+                    {!showConsolidated && unlockedStage === 1 && (<>
                     {!briefData && (<>
                     <div className="vx-placeholder-eyebrow">Step 9 of 9 · ◇ Review</div>
                     <div className="vx-placeholder-title">Review & Generate</div>
@@ -5389,7 +5406,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
 
                       {briefData && unlockedStage === 1 && (
                         <div className="stage-proceed">
-                          <button className="stage-proceed-btn" onClick={() => setUnlockedStage(2)}>
+                          <button className="stage-proceed-btn" onClick={() => { setShowConsolidated(false); setUnlockedStage(2); }}>
                             Proceed to Next Stage — Benchmark Intelligence →
                           </button>
                         </div>
@@ -5398,7 +5415,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                     </>)}
 
                     {/* Stage 2 — Benchmark Intelligence */}
-                    {unlockedStage === 2 && (
+                    {!showConsolidated && unlockedStage === 2 && (
                       <div id="anchor-benchmark">
                         <button className="bm-trigger-btn" onClick={handleRunBenchmark} disabled={benchmarkLoading}>
                           {benchmarkLoading ? <><span className="bm-spinner" /> Running Analysis for Global Leading Practices…</> : <>◈ Run Analysis for Global Leading Practices</>}
@@ -5520,7 +5537,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
 
                         {benchmarkData && unlockedStage === 2 && (
                           <div className="stage-proceed">
-                            <button className="stage-proceed-btn" onClick={() => setUnlockedStage(3)}>
+                            <button className="stage-proceed-btn" onClick={() => { setShowConsolidated(false); setUnlockedStage(3); }}>
                               Proceed to Next Stage — Persona Synthesis →
                             </button>
                           </div>
@@ -5531,7 +5548,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                     {/* ══════════════════════════════════════════════ */}
                     {/* Stage 3 — Visitor Persona Synthesis           */}
                     {/* ══════════════════════════════════════════════ */}
-                    {unlockedStage === 3 && (
+                    {!showConsolidated && unlockedStage === 3 && (
                       <div id="anchor-persona">
                         <button className="bm-trigger-btn" onClick={handleGeneratePersonaLongList} disabled={personaLoading}>
                           {personaLoading ? <><span className="bm-spinner" /> Generating Visitor Persona Long List… {fmtElapsed(genElapsed)}</> : <>◍ Stage 3: Generate Visitor Persona Long List for Selection</>}
@@ -5779,7 +5796,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
 
                         {fullPersonas?.personas?.length > 0 && unlockedStage === 3 && (
                           <div className="stage-proceed">
-                            <button className="stage-proceed-btn" onClick={() => setUnlockedStage(4)}>
+                            <button className="stage-proceed-btn" onClick={() => { setShowConsolidated(false); setUnlockedStage(4); }}>
                               Proceed to Stage 4 — Journey Intelligence →
                             </button>
                           </div>
@@ -5790,7 +5807,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                     {/* ══════════════════════════════════════════════ */}
                     {/* Stage 4 — Journey Mapping, MoT & KPI Framework */}
                     {/* ══════════════════════════════════════════════ */}
-                    {unlockedStage === 4 && (
+                    {!showConsolidated && unlockedStage === 4 && (
                       <div style={{marginTop:18}} id="anchor-journey">
                         <button className="bm-trigger-btn" onClick={handleGenerateJourneys} disabled={journeyLoading}>
                           {journeyLoading ? <><span className="bm-spinner" /> Mapping Journeys, Moments of Truth & KPIs… {fmtElapsed(genElapsed)}</> : <>◆ Generate Stage 4 · Journey Maps, MoT & KPI Framework</>}
@@ -5853,104 +5870,81 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                                 ))}
                               </div>
 
-                              {journeySubView === "journey" && (
-                                <div>
-                                  <div className="jm-stage-rail">
-                                    {JOURNEY_STAGES.map((s, i) => (
-                                      <button key={s.key} className={`jm-stage-node ${activeJourneyStage===i?"active":""}`} onClick={()=>setActiveJourneyStage(i)}>
-                                        <span className="jm-stage-icon">{s.icon}</span>
-                                        <span className="jm-stage-label">{s.label}</span>
-                                      </button>
-                                    ))}
-                                  </div>
-                                  {stage.summary && <div className="jm-stage-summary">{stage.summary}</div>}
+                              {journeySubView === "journey" && (() => {
+                                const STG = JOURNEY_STAGES; // 5 stages
+                                const motTag = (c) => {
+                                  // map MoT classification → coloured tag
+                                  const map = { Critical: { l: "RISK", bg: "#FEE2E2", fg: "#B91C1C" }, High: { l: "CONV", bg: "#DBEAFE", fg: "#1D4ED8" }, Medium: { l: "DELIGHT", bg: "#DCFCE7", fg: "#15803D" }, Low: { l: "LOYALTY", bg: "#EDE9FE", fg: "#6D28D9" } };
+                                  return map[c] || map.Medium;
+                                };
+                                const motsByStage = {};
+                                (active.moments_of_truth || []).forEach((m) => {
+                                  const k = (m.stage || "").toLowerCase().replace(/[^a-z]/g, "");
+                                  motsByStage[k] = motsByStage[k] || [];
+                                  motsByStage[k].push(m);
+                                });
+                                const stageMots = (label) => motsByStage[label.toLowerCase().replace(/[^a-z]/g, "")] || [];
+                                // Emotional curve points across the 5 stages
+                                const pts = STG.map((s) => active.stages?.[s.key]?.avg_sentiment ?? 50);
+                                const W = 100, H = 34;
+                                const xy = pts.map((v, i) => [STG.length === 1 ? W / 2 : (i / (STG.length - 1)) * W, H - (v / 100) * H]);
+                                const path = xy.map((q, i) => `${i === 0 ? "M" : "L"}${q[0].toFixed(1)},${q[1].toFixed(1)}`).join(" ");
+                                const area = `${path} L${W},${H} L0,${H} Z`;
+                                return (
+                                  <div className="jmap-scroll">
+                                    <div className="jmap-grid">
+                                      {/* Header row: stage columns */}
+                                      <div className="jmap-rowlabel jmap-corner">Journey Stage</div>
+                                      {STG.map((s) => <div key={s.key} className="jmap-colhead">{s.label}</div>)}
 
-                                  {/* Emotional curve across this stage's touchpoints */}
-                                  {(stage.touchpoints || []).some(t => t.sentiment != null) && (() => {
-                                    const pts = (stage.touchpoints || []).map(t => t.sentiment ?? 50);
-                                    const n = pts.length;
-                                    const W = 100, H = 40;
-                                    const xy = pts.map((s, i) => [n === 1 ? W / 2 : (i / (n - 1)) * W, H - (s / 100) * H]);
-                                    const path = xy.map((p, i) => `${i === 0 ? "M" : "L"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
-                                    const area = `${path} L${W},${H} L0,${H} Z`;
-                                    return (
-                                      <div className="jm-curve">
-                                        <div className="jm-curve-head"><span className="jm-curve-title">Emotional Curve</span><span className="jm-curve-sub">How the visitor feels across this stage — peaks are delight, dips are friction</span></div>
-                                        <svg className="jm-curve-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
-                                          <defs>
-                                            <linearGradient id="jmCurveFill" x1="0" y1="0" x2="0" y2="1">
-                                              <stop offset="0%" stopColor="#7C3AED" stopOpacity="0.28" />
-                                              <stop offset="100%" stopColor="#7C3AED" stopOpacity="0.02" />
-                                            </linearGradient>
-                                          </defs>
-                                          <path d={area} fill="url(#jmCurveFill)" />
-                                          <path d={path} fill="none" stroke="#6D28D9" strokeWidth="1.4" vectorEffect="non-scaling-stroke" />
-                                          {xy.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r="1.8" fill="#6D28D9" vectorEffect="non-scaling-stroke" />)}
+                                      {/* Persona Goal */}
+                                      <div className="jmap-rowlabel">Persona Goal</div>
+                                      {STG.map((s) => <div key={s.key} className="jmap-cell">{active.stages?.[s.key]?.persona_goal || "—"}</div>)}
+
+                                      {/* Key Actions */}
+                                      <div className="jmap-rowlabel">Key Actions</div>
+                                      {STG.map((s) => <div key={s.key} className="jmap-cell"><ul className="jmap-ul">{(active.stages?.[s.key]?.key_actions || []).map((a, i) => <li key={i}>{a}</li>)}</ul></div>)}
+
+                                      {/* Touchpoints */}
+                                      <div className="jmap-rowlabel">Touchpoints</div>
+                                      {STG.map((s) => <div key={s.key} className="jmap-cell"><div className="jmap-chips">{(active.stages?.[s.key]?.touchpoints || []).map((t, i) => <span key={i} className="jmap-chip">{t.name}</span>)}</div></div>)}
+
+                                      {/* Emotional Curve — spans all 5 columns */}
+                                      <div className="jmap-rowlabel">Emotional Curve</div>
+                                      <div className="jmap-curve-cell">
+                                        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="jmap-curve-svg">
+                                          <defs><linearGradient id="jmapCurve" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#7C3AED" stopOpacity="0.25" /><stop offset="100%" stopColor="#7C3AED" stopOpacity="0.02" /></linearGradient></defs>
+                                          <path d={area} fill="url(#jmapCurve)" />
+                                          <path d={path} fill="none" stroke="#6D28D9" strokeWidth="1.6" vectorEffect="non-scaling-stroke" />
+                                          {xy.map((q, i) => <circle key={i} cx={q[0]} cy={q[1]} r="2" fill="#6D28D9" vectorEffect="non-scaling-stroke" />)}
                                         </svg>
-                                        <div className="jm-curve-labels">
-                                          {(stage.touchpoints || []).map((t, i) => <span key={i} className="jm-curve-lbl">{t.name}</span>)}
+                                        <div className="jmap-emotion-labels">
+                                          {STG.map((s) => <span key={s.key} className="jmap-emotion-lbl">{active.stages?.[s.key]?.emotion_label || "—"}</span>)}
                                         </div>
                                       </div>
-                                    );
-                                  })()}
 
-                                  <div className="jm-legend">
-                                    <div className="jm-legend-row">
-                                      <span className="jm-legend-title">How to read the bars</span>
-                                      <span className="jm-legend-scale">
-                                        <span className="jm-legend-item"><span className="jm-legend-dot" style={{background:"#16A34A"}} /> Low</span>
-                                        <span className="jm-legend-item"><span className="jm-legend-dot" style={{background:"#D97706"}} /> Medium</span>
-                                        <span className="jm-legend-item"><span className="jm-legend-dot" style={{background:"#DC2626"}} /> High</span>
-                                      </span>
+                                      {/* Pain Points */}
+                                      <div className="jmap-rowlabel">Pain Points</div>
+                                      {STG.map((s) => { const pp = active.stages?.[s.key]?.pain_points || []; return <div key={s.key} className="jmap-cell">{pp.length ? <ul className="jmap-ul pain">{pp.map((x, i) => <li key={i}>{x}</li>)}</ul> : <span className="jmap-muted">—</span>}</div>; })}
+
+                                      {/* Moments of Truth — inline coloured tags */}
+                                      <div className="jmap-rowlabel">Moments of Truth</div>
+                                      {STG.map((s) => { const ms = stageMots(s.label); return <div key={s.key} className="jmap-cell">{ms.length ? ms.map((m, i) => { const t = motTag(m.classification); return <span key={i} className="jmap-mot" style={{ background: t.bg, color: t.fg }} title={m.name}>{t.l}</span>; }) : <span className="jmap-muted">—</span>}</div>; })}
+
+                                      {/* Opportunities */}
+                                      <div className="jmap-rowlabel">Opportunities</div>
+                                      {STG.map((s) => <div key={s.key} className="jmap-cell"><ul className="jmap-ul opp">{(active.stages?.[s.key]?.opportunities || []).map((o, i) => <li key={i}>{o}</li>)}</ul></div>)}
                                     </div>
-                                    <div className="jm-legend-defs">
-                                      <div className="jm-legend-def"><strong>Pain</strong> — how frustrating or stressful this step is for the visitor. <em>Lower is better.</em></div>
-                                      <div className="jm-legend-def"><strong>Delight</strong> — how positive or enjoyable this moment feels. <em>Higher is better.</em></div>
-                                      <div className="jm-legend-def"><strong>Risk</strong> — how likely this step is to go wrong and damage the visit. <em>Lower is better.</em></div>
-                                      <div className="jm-legend-def"><strong>Access. Barrier</strong> — how hard this step is for visitors with accessibility needs. <em>Lower is better.</em></div>
-                                      <div className="jm-legend-def"><strong>Ops Effort</strong> — how much staff/operational effort this step demands to run well. <em>Lower is easier.</em></div>
-                                      <div className="jm-legend-def"><strong>Priority</strong> — how important it is to get this step right (where to focus). <em>Higher = focus here first.</em></div>
+                                    <div className="jmap-key">
+                                      <span className="jmap-key-title">MoT tags:</span>
+                                      <span className="jmap-mot" style={{ background: "#FEE2E2", color: "#B91C1C" }}>RISK</span>
+                                      <span className="jmap-mot" style={{ background: "#DBEAFE", color: "#1D4ED8" }}>CONV</span>
+                                      <span className="jmap-mot" style={{ background: "#DCFCE7", color: "#15803D" }}>DELIGHT</span>
+                                      <span className="jmap-mot" style={{ background: "#EDE9FE", color: "#6D28D9" }}>LOYALTY</span>
                                     </div>
                                   </div>
-                                  <div className="jm-touchpoints">
-                                    {(stage.touchpoints || []).map((tp, i) => {
-                                      const chIcon = { Digital: "🖥", Physical: "📍", Human: "🧑‍💼", Hybrid: "🔀" }[tp.channel] || "•";
-                                      const row = (label, n, invert) => {
-                                        const lvl = HML(n); const col = invert ? delightColor(n) : scoreColor(n);
-                                        return (
-                                          <div className="jm-score" key={label}>
-                                            <span className="jm-score-k">{label}</span>
-                                            <span className="jm-score-bar"><span className="jm-score-fill" style={{ width: `${hmlPct(lvl)}%`, background: col }} /></span>
-                                            <span className="jm-score-n" style={{ color: col }}>{n == null ? "—" : lvl}</span>
-                                          </div>
-                                        );
-                                      };
-                                      return (
-                                        <div key={i} className="jm-tp-card">
-                                          <div className="jm-tp-head">
-                                            <span className="jm-tp-name"><span className="jm-tp-icon">{chIcon}</span> {tp.name}</span>
-                                            <span className="jm-tp-channel">{tp.channel}</span>
-                                          </div>
-                                          {(tp.emotion_line || tp.emotion) && <div className="jm-tp-emotion-row">{tp.emotion_line || `“${tp.emotion}”`}</div>}
-                                          <div className="jm-score-grid">
-                                            {row("Pain", tp.pain_level)}
-                                            {row("Delight", tp.delight_level, true)}
-                                            {row("Risk", tp.risk_level)}
-                                            {row("Access. Barrier", tp.accessibility_impact)}
-                                            {row("Ops Effort", tp.operational_complexity)}
-                                            <div className="jm-score">
-                                              <span className="jm-score-k">Priority</span>
-                                              <span className="jm-score-bar"><span className="jm-score-fill" style={{ width: `${hmlPct(HML(tp.priority_score))}%`, background: "#4F46E5" }} /></span>
-                                              <span className="jm-score-n" style={{ color: "#4F46E5" }}>{tp.priority_score == null ? "—" : HML(tp.priority_score)}</span>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                    {(stage.touchpoints||[]).length === 0 && <span style={{fontSize:11,color:"#3A4A60",fontStyle:"italic"}}>No touchpoints for this stage.</span>}
-                                  </div>
-                                </div>
-                              )}
+                                );
+                              })()}
 
                               {journeySubView === "mot" && (
                                 <div className="bm-panel">
@@ -6039,6 +6033,125 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                         })()}
                       </div>
                     )}
+
+                    {/* ══════════════════════════════════════════════ */}
+                    {/* Consolidated Customer Journey Mapping Framework */}
+                    {/* ══════════════════════════════════════════════ */}
+                    {showConsolidated && journeyData?.journeys?.length > 0 && (() => {
+                      const cf = buildConsolidatedFramework(journeyData, briefData, benchmarkData, briefData?.sector_context?.sector_id || selectedSector?.id);
+                      const intensityColor = (v) => v >= 70 ? "#16A34A" : v >= 50 ? "#D97706" : "#DC2626";
+                      const clusterColor = { Conversion: "#1D4ED8", Risk: "#B91C1C", Delight: "#15803D", Loyalty: "#6D28D9" };
+                      return (
+                        <div className="bm-wrap">
+                          <div className="stage-context" style={{ "--stage-color": "#0E7490" }}>
+                            <div className="stage-context-banner" style={{ background: "#0E7490" }}>
+                              <span className="stage-context-badge2">Strategy Layer</span>
+                              <span className="stage-context-bannername">Consolidated Customer Journey Framework</span>
+                              <span className="stage-context-gate passed">{cf.persona_count} personas synthesised</span>
+                            </div>
+                            <div className="stage-context-grid">
+                              <div className="stage-context-item"><span className="stage-context-k">What this is</span><span className="stage-context-v">A cross-persona, executive synthesis of every journey — the strategic layer above the individual maps.</span></div>
+                              <div className="stage-context-item"><span className="stage-context-k">Why it matters</span><span className="stage-context-v">It shows where personas converge, where they diverge, and the few priorities and tensions leadership must resolve.</span></div>
+                            </div>
+                          </div>
+
+                          {/* Section 1 — Journey Architecture */}
+                          <div className="cf-section">
+                            <div className="cf-h">01 · Journey Architecture Overview</div>
+                            <div className="cf-arch-grid">
+                              {cf.architecture.map((a, i) => (
+                                <div key={i} className="cf-arch-card">
+                                  <div className="cf-arch-stage">{a.stage}</div>
+                                  <div className="cf-arch-shared">{a.shared}</div>
+                                  <div className="cf-arch-div">{a.divergence}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Section 2 — Persona Overlay Grid */}
+                          <div className="cf-section">
+                            <div className="cf-h">02 · Persona Overlay Grid</div>
+                            <div className="jmap-scroll">
+                              <table className="cf-table">
+                                <thead><tr><th>Stage</th>{(cf.overlay[0]?.cells || []).map((c, i) => <th key={i}>{c.persona}</th>)}</tr></thead>
+                                <tbody>
+                                  {cf.overlay.map((row, i) => (
+                                    <tr key={i}>
+                                      <td className="cf-td-stage">{row.stage}</td>
+                                      {row.cells.map((c, j) => (
+                                        <td key={j}>
+                                          <div className="cf-cell-beh">{c.behaviour}</div>
+                                          <div className="cf-cell-emo"><span className="cf-dot" style={{ background: intensityColor(c.intensity) }} /> {c.emotion}</div>
+                                        </td>
+                                      ))}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+
+                          {/* Section 3 — MoT Consolidation */}
+                          <div className="cf-section">
+                            <div className="cf-h">03 · Moments of Truth Consolidation</div>
+                            <div className="cf-mot-grid">
+                              {cf.motConsolidation.map((cl, i) => (
+                                <div key={i} className="cf-mot-cluster" style={{ borderTopColor: clusterColor[cl.cluster] }}>
+                                  <div className="cf-mot-clustertitle" style={{ color: clusterColor[cl.cluster] }}>{cl.cluster}</div>
+                                  {cl.common.length > 0 && <div className="cf-mot-sub">Common (high priority)</div>}
+                                  {cl.common.map((m, j) => <div key={j} className="cf-mot-item common">{m.name} <span className="cf-mot-count">×{m.personas.length}</span></div>)}
+                                  {cl.specific.length > 0 && <div className="cf-mot-sub">Persona-specific</div>}
+                                  {cl.specific.map((m, j) => <div key={j} className="cf-mot-item">{m.name} <span className="cf-mot-who">{m.personas[0]}</span></div>)}
+                                  {cl.common.length === 0 && cl.specific.length === 0 && <div className="jmap-muted" style={{ fontSize: 11 }}>None</div>}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Section 4 — Experience Design Priorities */}
+                          <div className="cf-section">
+                            <div className="cf-h">04 · Experience Design Priorities</div>
+                            <div className="cf-prio-list">
+                              {cf.priorities.map((p, i) => (
+                                <div key={i} className="cf-prio">
+                                  <span className="cf-prio-num">{i + 1}</span>
+                                  <div><div className="cf-prio-title">{p.priority}</div><div className="cf-prio-rationale">{p.rationale} <span className="cf-prio-src">{p.source}</span></div></div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Section 5 — KPI Consolidation */}
+                          <div className="cf-section">
+                            <div className="cf-h">05 · KPI Consolidation Layer</div>
+                            <div className="cf-kpi-cols">
+                              <div className="cf-kpi-col">
+                                <div className="cf-kpi-coltitle">Universal KPIs <span className="cf-kpi-note">(all personas)</span></div>
+                                {cf.universalKpis.length ? cf.universalKpis.map((k, i) => <div key={i} className="cf-kpi-row"><span>{k.name}</span><span className="cf-kpi-target">{k.target}</span></div>) : <div className="jmap-muted" style={{ fontSize: 11 }}>—</div>}
+                              </div>
+                              <div className="cf-kpi-col">
+                                <div className="cf-kpi-coltitle">Persona-Specific KPIs</div>
+                                {cf.specificKpis.length ? cf.specificKpis.map((k, i) => <div key={i} className="cf-kpi-row"><span>{k.name}</span><span className="cf-kpi-who">{k.personas.join(", ")}</span></div>) : <div className="jmap-muted" style={{ fontSize: 11 }}>—</div>}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Section 6 — Design Tensions */}
+                          <div className="cf-section">
+                            <div className="cf-h">06 · Design Tensions</div>
+                            <div className="cf-tension-grid">
+                              {cf.tensions.map((t, i) => (
+                                <div key={i} className="cf-tension">
+                                  <div className="cf-tension-title">⚖ {t.tension}</div>
+                                  <div className="cf-tension-detail">{t.detail}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                   </div>
                 );
