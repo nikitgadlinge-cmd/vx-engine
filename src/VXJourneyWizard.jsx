@@ -39,9 +39,24 @@ const STAGE_GROUPS = [
       { id: 8, label: "Review & Generate" },
     ],
   },
-  { n: 2, name: "Benchmark Intelligence", color: "#3B82F6", desc: "Global leading practices matched to your goals.", outputKey: "benchmark" },
-  { n: 3, name: "Persona Synthesis", color: "#8B5CF6", desc: "The visitor personas your experience is designed around.", outputKey: "persona" },
-  { n: 4, name: "Journey Intelligence", color: "#10B981", desc: "Journey maps, Moments of Truth and the KPI framework.", outputKey: "journey" },
+  { n: 2, name: "Benchmark Intelligence", color: "#3B82F6", desc: "Global leading practices matched to your goals.", outputKey: "benchmark",
+    subItems: [
+      { label: "Run Analysis", anchor: "anchor-benchmark" },
+      { label: "Leading Practices", anchor: "anchor-benchmark-results" },
+    ] },
+  { n: 3, name: "Persona Synthesis", color: "#8B5CF6", desc: "The visitor personas your experience is designed around.", outputKey: "persona",
+    subItems: [
+      { label: "Generate Long List", anchor: "anchor-persona" },
+      { label: "Persona Selection", anchor: "anchor-persona-select" },
+      { label: "Full Persona Cards", anchor: "anchor-persona-cards" },
+    ] },
+  { n: 4, name: "Journey Intelligence", color: "#10B981", desc: "Journey maps, Moments of Truth and the KPI framework.", outputKey: "journey",
+    subItems: [
+      { label: "Generate Stage 4", anchor: "anchor-journey" },
+      { label: "Journey Maps", anchor: "anchor-journey-maps" },
+      { label: "Moments of Truth", anchor: "anchor-journey-mot" },
+      { label: "KPI Framework", anchor: "anchor-journey-kpi" },
+    ] },
 ];
 
 const accentColor = "#C8F04A";
@@ -512,6 +527,18 @@ Required JSON shape:
         else ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       } catch (e) {}
     }, 130);
+  };
+  // Scroll the right panel to a specific anchored section (used by left-nav sub-items)
+  const scrollToAnchor = (anchorId) => {
+    setTimeout(() => {
+      try {
+        const el = document.getElementById(anchorId);
+        if (el && mainPanelRef.current) {
+          const top = el.offsetTop - 12;
+          mainPanelRef.current.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+        }
+      } catch (e) {}
+    }, 80);
   };
   const [genElapsed, setGenElapsed] = useState(0);
 
@@ -1257,7 +1284,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
   };
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [stageOpen, setStageOpen] = useState({ 1: true, 2: false, 3: false, 4: false });
+  const [userToggledStages, setUserToggledStages] = useState({});
   // Strict sequential gating of the four output stages (1=intake/brief .. 4=journey).
   // A stage's section only appears once the user clicks "Proceed to Next Stage".
   const [unlockedStage, setUnlockedStage] = usePersisted("unlockedStage", 1);
@@ -3898,10 +3925,10 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
               const reachable = isIntake || (current >= 8 && unlockedStage >= g.n);
               // On the Review screen the active stage follows unlockedStage; during intake, Stage 1 is active.
               const stageActive = current < 8 ? isIntake : (g.n === unlockedStage);
-              const expanded = stageOpen[g.n] ?? (g.n === unlockedStage);
+              const expanded = (g.n in userToggledStages) ? userToggledStages[g.n] : (g.n === (current < 8 ? 1 : unlockedStage));
               return (
                 <div key={g.n} className={`vx-stage-group ${stageActive ? "active" : ""}`} style={{ "--stage-color": g.color }}>
-                  <div className="vx-stage-head" onClick={() => setStageOpen(o => ({ ...o, [g.n]: !expanded }))}>
+                  <div className="vx-stage-head" onClick={() => setUserToggledStages(o => ({ ...o, [g.n]: !expanded }))}>
                     <span className={`vx-stage-badge ${stageDone ? "done" : ""}`} style={{ background: g.color }}>
                       {stageDone ? "✓" : g.n}
                     </span>
@@ -3927,13 +3954,28 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                           );
                         })
                       ) : (
-                        <div
-                          className={`vx-nav-item ${stageActive && outputReady ? "active" : ""} ${outputReady ? "done" : "locked"}`}
-                          onClick={() => { if (reachable) { setCurrent(8); setSidebarOpen(false); } }}
-                        >
-                          <span className="vx-nav-mark">{outputReady ? "✓" : reachable ? "●" : "🔒"}</span>
-                          <span className="vx-nav-label">{outputReady ? "View output" : reachable ? "Generate in Review" : "Locked"}</span>
-                        </div>
+                        (g.subItems || []).map((sub, si) => {
+                          const stageUnlocked = unlockedStage >= g.n;
+                          return (
+                            <div
+                              key={si}
+                              className={`vx-nav-item ${stageUnlocked ? "" : "locked"} ${outputReady && si === 0 ? "done" : ""}`}
+                              onClick={() => {
+                                if (!stageUnlocked) return;
+                                setCurrent(8);
+                                setSidebarOpen(false);
+                                // Stage 4 sub-views are tabs — switch the tab where relevant
+                                if (sub.anchor === "anchor-journey-mot") setJourneySubView("mot");
+                                else if (sub.anchor === "anchor-journey-kpi") setJourneySubView("kpi");
+                                else if (sub.anchor === "anchor-journey-maps") setJourneySubView("journey");
+                                scrollToAnchor(sub.anchor === "anchor-journey-mot" || sub.anchor === "anchor-journey-kpi" ? "anchor-journey-maps" : sub.anchor);
+                              }}
+                            >
+                              <span className="vx-nav-mark">{!stageUnlocked ? "🔒" : outputReady ? "✓" : "●"}</span>
+                              <span className="vx-nav-label">{sub.label}</span>
+                            </div>
+                          );
+                        })
                       )}
                     </div>
                   )}
@@ -5321,7 +5363,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
 
                     {/* Stage 2 — Benchmark Intelligence */}
                     {briefData && unlockedStage >= 2 && (
-                      <div>
+                      <div id="anchor-benchmark">
                         <button className="bm-trigger-btn" onClick={handleRunBenchmark} disabled={benchmarkLoading}>
                           {benchmarkLoading ? <><span className="bm-spinner" /> Running Analysis for Global Leading Practices…</> : <>◈ Run Analysis for Global Leading Practices</>}
                         </button>
@@ -5400,7 +5442,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                             );
                           };
                           return (
-                            <div className="bm-wrap" ref={benchmarkOutRef}>
+                            <div className="bm-wrap" ref={benchmarkOutRef} id="anchor-benchmark-results">
                               <StageContext
                                 stage={2}
                                 where="You're now looking outward — at how the best venues in your sector solve the same challenges."
@@ -5454,7 +5496,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                     {/* Stage 3 — Visitor Persona Synthesis           */}
                     {/* ══════════════════════════════════════════════ */}
                     {benchmarkData && unlockedStage >= 3 && (
-                      <div>
+                      <div id="anchor-persona">
                         <button className="bm-trigger-btn" onClick={handleGeneratePersonaLongList} disabled={personaLoading}>
                           {personaLoading ? <><span className="bm-spinner" /> Generating Visitor Persona Long List… {fmtElapsed(genElapsed)}</> : <>◍ Stage 3: Generate Visitor Persona Long List for Selection</>}
                         </button>
@@ -5475,7 +5517,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                           ];
                           const cplxColor = (v) => v === "Very High" ? "#C07070" : v === "High" ? "#C8B840" : v === "Medium" ? "#7AC8E0" : "#80C870";
                           return (
-                            <div className="bm-wrap" ref={personaOutRef}>
+                            <div className="bm-wrap" ref={personaOutRef} id="anchor-persona-select">
                               <StageContext
                                 stage={3}
                                 where="This is your first headline deliverable: the visitor personas your whole experience will be designed around."
@@ -5581,7 +5623,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                           const validation = fullPersonas.coverage_validation || [];
                           const list = (arr) => (arr || []).length > 0;
                           return (
-                            <div className="bm-wrap" style={{marginTop:18}}>
+                            <div className="bm-wrap" style={{marginTop:18}} id="anchor-persona-cards">
                               <div className="bm-header">
                                 <div className="bm-header-left">
                                   <span className="bm-eyebrow">◍ Stage 3 · Confirmed Persona Set</span>
@@ -5713,7 +5755,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                     {/* Stage 4 — Journey Mapping, MoT & KPI Framework */}
                     {/* ══════════════════════════════════════════════ */}
                     {fullPersonas?.personas?.length > 0 && unlockedStage >= 4 && (
-                      <div style={{marginTop:18}}>
+                      <div style={{marginTop:18}} id="anchor-journey">
                         <button className="bm-trigger-btn" onClick={handleGenerateJourneys} disabled={journeyLoading}>
                           {journeyLoading ? <><span className="bm-spinner" /> Mapping Journeys, Moments of Truth & KPIs… {fmtElapsed(genElapsed)}</> : <>◆ Generate Stage 4 · Journey Maps, MoT & KPI Framework</>}
                         </button>
@@ -5735,7 +5777,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                             { key: "Operational", label: "Operational KPIs" },
                           ];
                           return (
-                            <div className="bm-wrap" ref={journeyOutRef}>
+                            <div className="bm-wrap" ref={journeyOutRef} id="anchor-journey-maps">
                               <StageContext
                                 stage={4}
                                 where="This is your second headline deliverable: how each persona actually experiences your venue, end to end."
@@ -5967,32 +6009,33 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
               })()}
             </div>
 
-            {/* Bottom nav */}
-            <div className="vx-nav">
-              <div className="vx-nav-left">
-                <span className="vx-step-counter">
-                  Step <strong>{current + 1}</strong> / 9
-                </span>
-              </div>
-              <div style={{ display: "flex", gap: "10px" }}>
-                <button
-                  className="vx-btn vx-btn-ghost"
-                  onClick={goBack}
-                  disabled={current === 0}
-                >
-                  ← Back
-                </button>
-                <button
-                  className="vx-btn vx-btn-primary"
-                  onClick={goNext}
-                  disabled={current === 8}
-                >
-                  {current === 7 ? "Proceed to Review →" : "Next →"}
-                </button>
-              </div>
-            </div>
           </main>
         </div>
+        {current < 8 && (
+          <div className="vx-nav">
+            <div className="vx-nav-left">
+              <span className="vx-step-counter">
+                Step <strong>{current + 1}</strong> / 9
+              </span>
+            </div>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button
+                className="vx-btn vx-btn-ghost"
+                onClick={goBack}
+                disabled={current === 0}
+              >
+                ← Back
+              </button>
+              <button
+                className="vx-btn vx-btn-primary"
+                onClick={goNext}
+                disabled={current === 8}
+              >
+                {current === 7 ? "Proceed to Review →" : "Next →"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
