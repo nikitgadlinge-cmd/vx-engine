@@ -785,6 +785,11 @@ Required JSON shape:
 
   // Tick an elapsed-seconds counter whenever a generation is in flight
   const anyGenLoading = personaLoading || fullPersonaLoading || journeyLoading;
+
+  // Strict sequential gating of the four output stages (1=intake/brief .. 4=journey).
+  // A stage's section only appears once the user clicks "Proceed to Next Stage".
+  const [unlockedStage, setUnlockedStage] = usePersisted("unlockedStage", 1);
+
   // Reset the right panel to its top ONLY when the screen is replaced
   // (changing intake step, or switching output stage). Never on generate.
   useEffect(() => {
@@ -1281,9 +1286,6 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userToggledStages, setUserToggledStages] = useState({});
-  // Strict sequential gating of the four output stages (1=intake/brief .. 4=journey).
-  // A stage's section only appears once the user clicks "Proceed to Next Stage".
-  const [unlockedStage, setUnlockedStage] = usePersisted("unlockedStage", 1);
   // Overall journey progress: intake steps (0-8) weighted to 50%, the 3 generated outputs the other 50%.
   const intakeFrac = Math.min(current, 8) / 8; // 0..1 across intake
   const outputsDone = (benchmarkData ? 1 : 0) + ((fullPersonas || personaData) ? 1 : 0) + (journeyData ? 1 : 0);
