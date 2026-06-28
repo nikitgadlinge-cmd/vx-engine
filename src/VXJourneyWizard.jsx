@@ -758,6 +758,14 @@ Required JSON shape:
 
   // Tick an elapsed-seconds counter whenever a generation is in flight
   const anyGenLoading = personaLoading || fullPersonaLoading || journeyLoading;
+  // On load, if outputs already exist (returning user), unlock up to the furthest generated stage
+  // so their content isn't hidden behind Proceed buttons they already passed.
+  useEffect(() => {
+    const reached = journeyData ? 4 : (fullPersonas || personaData) ? 3 : benchmarkData ? 2 : 1;
+    setUnlockedStage((u) => Math.max(u, reached));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!anyGenLoading) { setGenElapsed(0); return; }
     setGenElapsed(0);
@@ -1218,9 +1226,9 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
   const handleStartOver = () => {
     if (!window.confirm("Reset all data and start from the Welcome screen?")) return;
     // Clear localStorage
-    const keys = ["current","selectedSector","selectedSubtype","expPurpose","expVisitorVolume","expFootprint","expTheme","expTones","physicalFeatures","ocTicketingType","ocTicketingSub","ocTimedCapacity","ocPricing","ocTicketingModels","ocEntryTech","ocOutsideFood","ocReEntry","ocMedPolicy","ocMedStorage","ocPhonesPermitted","ocRestrictedZones","ocScreeningTech","ocHseRisk","ocHseEvac","ocHseMedical","ocCrowdNotes","shTiers","shNationalities","shReligious","shPrimaryLang","shSecondaryLang","motivations","outcomes","primaryTemplate","secondaryTemplate","aiOutput","briefData","benchmarkData","personaData","personaSelections","fullPersonas","journeyData"];
+    const keys = ["current","unlockedStage","selectedSector","selectedSubtype","expPurpose","expVisitorVolume","expFootprint","expTheme","expTones","physicalFeatures","ocTicketingType","ocTicketingSub","ocTimedCapacity","ocPricing","ocTicketingModels","ocEntryTech","ocOutsideFood","ocReEntry","ocMedPolicy","ocMedStorage","ocPhonesPermitted","ocRestrictedZones","ocScreeningTech","ocHseRisk","ocHseEvac","ocHseMedical","ocCrowdNotes","shTiers","shNationalities","shReligious","shPrimaryLang","shSecondaryLang","motivations","outcomes","primaryTemplate","secondaryTemplate","aiOutput","briefData","benchmarkData","personaData","personaSelections","fullPersonas","journeyData"];
     keys.forEach(k => { try { localStorage.removeItem(`vx_${k}`); } catch {} });
-    setCurrent(0);
+    setCurrent(0); setUnlockedStage(1);
     setSelectedSector(null); setSelectedSubtype("");
     setExpPurpose(""); setExpDuration(""); setExpVisitorVolume(""); setExpFootprint(""); setExpTheme(""); setExpTones([]);
     setPhysicalFeatures(Object.fromEntries(PHYSICAL_FEATURES.map(f => [f, { ...DEFAULT_FEATURE_ROW }])));
@@ -1241,6 +1249,9 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [stageOpen, setStageOpen] = useState({ 1: true, 2: false, 3: false, 4: false });
+  // Strict sequential gating of the four output stages (1=intake/brief .. 4=journey).
+  // A stage's section only appears once the user clicks "Proceed to Next Stage".
+  const [unlockedStage, setUnlockedStage] = usePersisted("unlockedStage", 1);
   // Overall journey progress: intake steps (0-8) weighted to 50%, the 3 generated outputs the other 50%.
   const intakeFrac = Math.min(current, 8) / 8; // 0..1 across intake
   const outputsDone = (benchmarkData ? 1 : 0) + ((fullPersonas || personaData) ? 1 : 0) + (journeyData ? 1 : 0);
@@ -3874,17 +3885,18 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                 : g.outputKey === "journey" ? !!journeyData : false;
               const intakeDone = current >= 8;
               const stageDone = isIntake ? intakeDone : outputReady;
-              // A stage is "reachable": intake always; outputs only once Review reached
-              const reachable = isIntake || current >= 8;
-              const stageActive = isIntake ? (current >= 1 && current <= 8) : (current === 8 && reachable);
-              const expanded = stageOpen[g.n] ?? (g.n === 1);
+              // A stage is "reachable" once the user has unlocked it via Proceed buttons
+              const reachable = isIntake || (current >= 8 && unlockedStage >= g.n);
+              // On the Review screen the active stage follows unlockedStage; during intake, Stage 1 is active.
+              const stageActive = current < 8 ? isIntake : (g.n === unlockedStage);
+              const expanded = stageOpen[g.n] ?? (g.n === unlockedStage);
               return (
                 <div key={g.n} className={`vx-stage-group ${stageActive ? "active" : ""}`} style={{ "--stage-color": g.color }}>
                   <div className="vx-stage-head" onClick={() => setStageOpen(o => ({ ...o, [g.n]: !expanded }))}>
                     <span className={`vx-stage-badge ${stageDone ? "done" : ""}`} style={{ background: g.color }}>
                       {stageDone ? "✓" : g.n}
                     </span>
-                    <span className="vx-stage-name">{g.name}</span>
+                    <span className="vx-stage-name">Stage {g.n} — {g.name}</span>
                     <span className="vx-stage-chev">{expanded ? "▾" : "▸"}</span>
                   </div>
                   {expanded && (
@@ -5288,10 +5300,18 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                           </div>
                         );
                       })()}
+
+                      {briefData && unlockedStage === 1 && (
+                        <div className="stage-proceed">
+                          <button className="stage-proceed-btn" onClick={() => { setUnlockedStage(2); scrollToOutput(benchmarkOutRef); }}>
+                            Proceed to Next Stage — Benchmark Intelligence →
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {/* Stage 2 — Benchmark Intelligence */}
-                    {briefData && (
+                    {briefData && unlockedStage >= 2 && (
                       <div>
                         <button className="bm-trigger-btn" onClick={handleRunBenchmark} disabled={benchmarkLoading}>
                           {benchmarkLoading ? <><span className="bm-spinner" /> Running Analysis for Global Leading Practices…</> : <>◈ Run Analysis for Global Leading Practices</>}
@@ -5410,13 +5430,21 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                             </div>
                           );
                         })()}
+
+                        {benchmarkData && unlockedStage === 2 && (
+                          <div className="stage-proceed">
+                            <button className="stage-proceed-btn" onClick={() => { setUnlockedStage(3); scrollToOutput(personaOutRef); }}>
+                              Proceed to Next Stage — Persona Synthesis →
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {/* ══════════════════════════════════════════════ */}
                     {/* Stage 3 — Visitor Persona Synthesis           */}
                     {/* ══════════════════════════════════════════════ */}
-                    {benchmarkData && (
+                    {benchmarkData && unlockedStage >= 3 && (
                       <div>
                         <button className="bm-trigger-btn" onClick={handleGeneratePersonaLongList} disabled={personaLoading}>
                           {personaLoading ? <><span className="bm-spinner" /> Generating Visitor Persona Long List… {fmtElapsed(genElapsed)}</> : <>◍ Stage 3: Generate Visitor Persona Long List for Selection</>}
@@ -5495,7 +5523,13 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                                         </div>
                                         <div className="bm-card-header-right">
                                           <span className="px-cplx" style={{color: cplxColor(p.journey_complexity), borderColor: cplxColor(p.journey_complexity)}}>{p.journey_complexity}</span>
-                                          <span className={`px-pill ${sel}`}>{sel}</span>
+                                          <button
+                                            className={`px-check-btn ${sel !== "exclude" ? "on" : ""}`}
+                                            onClick={(e) => { e.stopPropagation(); setPersonaSelection(p.id, sel === "exclude" ? "include" : "exclude"); }}
+                                            title={sel !== "exclude" ? "Selected — click to remove" : "Click to select"}
+                                          >
+                                            {sel !== "exclude" ? "✓ Selected" : "+ Select"}
+                                          </button>
                                           <span className="bm-chevron">▾</span>
                                         </div>
                                       </div>
@@ -5515,11 +5549,6 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                                               <div className="bo-chips">{p.constraint_flags.map((c,i)=><span key={i} className="bo-chip high">{c}</span>)}</div>
                                             </div>
                                           )}
-                                          <div className="px-selectors">
-                                            {SEL_BTNS.map(b => (
-                                              <button key={b.key} className={`px-sel-btn ${sel === b.key ? "active "+b.key : ""}`} onClick={(e)=>{e.stopPropagation(); setPersonaSelection(p.id, b.key);}}>{b.label}</button>
-                                            ))}
-                                          </div>
                                         </div>
                                       )}
                                     </div>
@@ -5527,8 +5556,8 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                                 })}
                               </div>
 
-                              <button className="bm-trigger-btn" style={{marginTop:14}} onClick={handleGenerateFullPersonas} disabled={fullPersonaLoading}>
-                                {fullPersonaLoading ? <><span className="bm-spinner" /> Validating Coverage & Generating Cards… {fmtElapsed(genElapsed)}</> : <>◆ Confirm Selection · Validate Coverage & Generate Full Cards</>}
+                              <button className="bm-trigger-btn px-confirm-btn" style={{marginTop:14}} onClick={handleGenerateFullPersonas} disabled={fullPersonaLoading}>
+                                {fullPersonaLoading ? <><span className="bm-spinner" /> Validating Coverage… {fmtElapsed(genElapsed)}</> : <>✓ Confirm Selection</>}
                               </button>
                               {fullPersonaLoading && <button className="jm-cancel-btn" onClick={cancelGeneration}>✕ Cancel</button>}
                               {fullPersonaError && <div className="bm-error">⚠ {fullPersonaError}</div>}
@@ -5661,13 +5690,21 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                             </div>
                           );
                         })()}
+
+                        {fullPersonas?.personas?.length > 0 && unlockedStage === 3 && (
+                          <div className="stage-proceed">
+                            <button className="stage-proceed-btn" onClick={() => { setUnlockedStage(4); scrollToOutput(journeyOutRef); }}>
+                              Proceed to Stage 4 — Journey Intelligence →
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {/* ══════════════════════════════════════════════ */}
                     {/* Stage 4 — Journey Mapping, MoT & KPI Framework */}
                     {/* ══════════════════════════════════════════════ */}
-                    {fullPersonas?.personas?.length > 0 && (
+                    {fullPersonas?.personas?.length > 0 && unlockedStage >= 4 && (
                       <div style={{marginTop:18}}>
                         <button className="bm-trigger-btn" onClick={handleGenerateJourneys} disabled={journeyLoading}>
                           {journeyLoading ? <><span className="bm-spinner" /> Mapping Journeys, Moments of Truth & KPIs… {fmtElapsed(genElapsed)}</> : <>◆ Generate Stage 4 · Journey Maps, MoT & KPI Framework</>}
