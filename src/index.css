@@ -439,3 +439,41 @@ input:focus, textarea:focus, select:focus { border-color: var(--vx-indigo) !impo
   .vx-sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 50; transform: translateX(-100%); transition: transform 0.2s; }
   .vx-sidebar.mobile-open { transform: translateX(0); }
 }
+
+/* ============================================================
+   WORKSTREAM 1b — sticky nav, gated flow, simplified selection
+   ============================================================ */
+
+/* Left panel stays static; only the right content scrolls */
+.vx-body { overflow: hidden !important; }
+.vx-sidebar {
+  position: sticky; top: 0; align-self: flex-start;
+  height: 100%; max-height: 100%; overflow-y: auto;
+}
+.vx-main { overflow-y: auto !important; height: 100%; }
+
+/* "Proceed to Next Stage" button */
+.stage-proceed { display: flex; justify-content: center; margin: 26px 0 8px; }
+.stage-proceed-btn {
+  font-family: 'Syne', sans-serif !important;
+  font-size: 14px; font-weight: 700; letter-spacing: 0.01em;
+  color: #fff; border: none; border-radius: 12px; padding: 14px 28px; cursor: pointer;
+  background: linear-gradient(135deg, #5B52F0 0%, #4F46E5 50%, #6D28D9 100%);
+  box-shadow: 0 8px 22px rgba(79,70,229,0.30);
+  transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+}
+.stage-proceed-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(79,70,229,0.40); filter: brightness(1.05); }
+
+/* Simplified persona selection — single check button */
+.px-check-btn {
+  font-size: 12px; font-weight: 600; border-radius: 999px; padding: 6px 14px; cursor: pointer;
+  background: #fff; border: 1.5px solid #D7DAE8; color: var(--vx-slate); transition: all 0.15s;
+}
+.px-check-btn:hover { border-color: var(--vx-indigo); color: var(--vx-indigo); }
+.px-check-btn.on { background: linear-gradient(135deg, #16A34A, #15803D); border-color: transparent; color: #fff; box-shadow: 0 3px 10px rgba(22,163,74,0.28); }
+
+/* Smaller Confirm Selection button */
+.px-confirm-btn {
+  display: inline-block !important; width: auto !important;
+  font-size: 13px !important; padding: 10px 22px !important; border-radius: 10px !important;
+}
