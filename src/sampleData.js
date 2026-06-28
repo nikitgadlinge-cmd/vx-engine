@@ -588,20 +588,28 @@ export function buildSampleJourneys(personas, templateUsed, sectorId) {
     const vip = (p.tier || "").includes("VIP") || (p.tier || "").includes("VVIP");
     const stages = {};
     Object.entries(lib.touchpoints).forEach(([stageKey, tps]) => {
+      const tpList = tps.map(([name, channel, emotion], idx) => {
+        const [pain, delight, risk, acc, ops, prio] = scoreFor(stageKey, idx, pod, vip);
+        const sentiment = Math.max(8, Math.min(96, Math.round(50 + (delight - 3) * 18 - (pain - 2) * 10 - (risk - 2) * 6)));
+        return {
+          name, stage: stageKey, channel, emotion,
+          emotion_line: emotionLine(name, emotion, p, sentiment),
+          sentiment,
+          pain_level: pain, delight_level: delight, risk_level: risk,
+          accessibility_impact: acc, operational_complexity: ops, priority_score: prio,
+        };
+      });
+      // Stage-level emotion: average sentiment → a single dominant label
+      const avgSent = Math.round(tpList.reduce((s, t) => s + t.sentiment, 0) / (tpList.length || 1));
       stages[stageKey] = {
         summary: stageSummary(stageKey, lib, p),
-        touchpoints: tps.map(([name, channel, emotion], idx) => {
-          const [pain, delight, risk, acc, ops, prio] = scoreFor(stageKey, idx, pod, vip);
-          // sentiment 0-100 for the emotional curve: delight lifts it, pain/risk pull it down
-          const sentiment = Math.max(8, Math.min(96, Math.round(50 + (delight - 3) * 18 - (pain - 2) * 10 - (risk - 2) * 6)));
-          return {
-            name, stage: stageKey, channel, emotion,
-            emotion_line: emotionLine(name, emotion, p, sentiment),
-            sentiment,
-            pain_level: pain, delight_level: delight, risk_level: risk,
-            accessibility_impact: acc, operational_complexity: ops, priority_score: prio,
-          };
-        }),
+        persona_goal: stageGoal(stageKey, p, lib),
+        key_actions: tpList.slice(0, 3).map((t) => t.name),
+        touchpoints: tpList,
+        emotion_label: emotionLabel(stageKey, avgSent, p),
+        avg_sentiment: avgSent,
+        pain_points: tpList.filter((t) => t.pain_level >= 3).map((t) => t.name).slice(0, 2),
+        opportunities: stageOpportunities(stageKey, lib, p),
       };
     });
 
@@ -671,4 +679,118 @@ function emotionLine(name, emotion, p, sentiment) {
       ? `${who} feels ${emotion} — a fragile moment where small failures do real damage.`
       : `${who} feels ${emotion} — a pivotal step that quietly shapes the overall impression.`;
   return lib[(emotion || "").toLowerCase()] || fallback;
+}
+
+// Per-stage persona goal for the journey-map grid.
+function stageGoal(stageKey, p, lib) {
+  const pod = !!p.pod_flag;
+  const goals = {
+    pre_visit: pod ? "Confirm the visit will be accessible and plan a safe route." : "Decide it's worth it and plan the visit with confidence.",
+    arrival: pod ? "Enter smoothly with dignity and clear accessible routing." : "Arrive, orient quickly and start the experience without friction.",
+    core_experience: `Get the core value: ${(p.motivation || "a great experience").toLowerCase()}.`,
+    exit_departure: "Leave on a high with a strong final impression.",
+    post_visit: "Feel it was worthwhile and want to return or recommend.",
+  };
+  return goals[stageKey] || "Have a smooth, valuable experience.";
+}
+
+// Map an average sentiment (0-100) to an emotion label per stage.
+function emotionLabel(stageKey, avgSent, p) {
+  if (avgSent >= 72) return stageKey === "core_experience" ? "Delight" : "Excitement";
+  if (avgSent >= 55) return "Engaged";
+  if (avgSent >= 42) return stageKey === "arrival" ? "Tension" : "Uncertainty";
+  return stageKey === "arrival" ? "Anxiety" : "Frustration";
+}
+
+// Per-stage opportunities for the journey-map grid (sector-connected).
+function stageOpportunities(stageKey, lib, p) {
+  const fz = lib.frictionZones.map((z) => z.recommendation);
+  const opps = {
+    pre_visit: ["Prime expectations with clear pre-visit content", p.pod_flag ? "Publish accessibility info up front" : "Surface highlights to build anticipation"],
+    arrival: [fz[0] || "Smooth the entry flow", "Greet and orient at the threshold"],
+    core_experience: [lib.levers?.[0]?.name || "Deploy the top design lever", "Protect the emotional peak"],
+    exit_departure: ["Design a deliberate closing moment", "Capture spend and memory before exit"],
+    post_visit: ["Convert satisfaction into advocacy", "Re-engage with a timely offer"],
+  };
+  return opps[stageKey] || ["Improve this stage"];
+}
+
+// Cross-persona synthesis for the Consolidated Customer Journey Mapping Framework.
+export function buildConsolidatedFramework(journeyData, briefData, benchmarkData, sectorId) {
+  const key = resolveSector(sectorId, "");
+  const lib = SECTORS[key];
+  const journeys = (journeyData && journeyData.journeys) || [];
+  const STG = [
+    { key: "pre_visit", label: "Pre-Visit" },
+    { key: "arrival", label: "Arrival" },
+    { key: "core_experience", label: "Core Experience" },
+    { key: "exit_departure", label: "Exit" },
+    { key: "post_visit", label: "Post-Visit" },
+  ];
+
+  // Section 1 — Journey Architecture: shared stages + divergence
+  const architecture = STG.map((s) => {
+    const labels = journeys.map((j) => j.stages?.[s.key]?.emotion_label).filter(Boolean);
+    const distinct = [...new Set(labels)];
+    return {
+      stage: s.label,
+      shared: `All personas pass through ${s.label.toLowerCase()}.`,
+      divergence: distinct.length > 1 ? `Emotional response diverges: ${distinct.join(" / ")}.` : `Broadly aligned emotional response (${distinct[0] || "neutral"}).`,
+    };
+  });
+
+  // Section 2 — Persona overlay grid: per stage, each persona's dominant behaviour (key action)
+  const overlay = STG.map((s) => ({
+    stage: s.label,
+    cells: journeys.map((j) => ({
+      persona: j.persona_name,
+      behaviour: (j.stages?.[s.key]?.key_actions || [])[0] || "—",
+      emotion: j.stages?.[s.key]?.emotion_label || "—",
+      intensity: j.stages?.[s.key]?.avg_sentiment ?? 50,
+    })),
+  }));
+
+  // Section 3 — MoT consolidation: cluster across personas into the 4 types
+  const clusterFor = (c) => ({ Critical: "Risk", High: "Conversion", Medium: "Delight", Low: "Loyalty" }[c] || "Delight");
+  const motClusters = { Conversion: [], Risk: [], Delight: [], Loyalty: [] };
+  const motSeen = {};
+  journeys.forEach((j) => (j.moments_of_truth || []).forEach((m) => {
+    const cluster = clusterFor(m.classification);
+    const seenKey = `${cluster}::${m.name}`;
+    if (!motSeen[seenKey]) { motSeen[seenKey] = { name: m.name, stage: m.stage, personas: [] }; motClusters[cluster].push(motSeen[seenKey]); }
+    motSeen[seenKey].personas.push(j.persona_name);
+  }));
+  const motConsolidation = Object.entries(motClusters).map(([cluster, items]) => ({
+    cluster,
+    common: items.filter((i) => i.personas.length > 1),
+    specific: items.filter((i) => i.personas.length === 1),
+  }));
+
+  // Section 4 — Experience Design Priorities (from priority outcomes + MoT density + friction)
+  const top3 = (briefData && briefData.priority_heat_map && briefData.priority_heat_map.top_3) || [];
+  const priorities = [
+    ...lib.frictionZones.map((z) => ({ priority: `Resolve: ${z.zone}`, rationale: z.recommendation, source: "Friction zone" })),
+    ...(lib.levers || []).slice(0, 2).map((l) => ({ priority: `Deploy: ${l.name}`, rationale: l.impact, source: "Proven lever" })),
+    ...top3.slice(0, 3).map((o) => ({ priority: `Optimise for: ${o}`, rationale: "Top priority outcome from your brief.", source: "Priority outcome" })),
+  ].slice(0, 8);
+
+  // Section 5 — KPI consolidation: universal vs persona-specific
+  const allKpis = [];
+  const kpiSeen = {};
+  journeys.forEach((j) => (j.kpis || []).forEach((k) => {
+    if (!kpiSeen[k.name]) { kpiSeen[k.name] = { name: k.name, tier: k.tier, target: k.target, personas: [] }; allKpis.push(kpiSeen[k.name]); }
+    kpiSeen[k.name].personas.push(j.persona_name);
+  }));
+  const universalKpis = allKpis.filter((k) => k.personas.length === journeys.length && journeys.length > 0);
+  const specificKpis = allKpis.filter((k) => k.personas.length < journeys.length);
+
+  // Section 6 — Design Tensions (sector-aware, premium insight)
+  const tensions = [
+    { tension: "Speed vs. depth of experience", detail: "Fast throughput protects flow, but the value comes from immersion and dwell — over-optimising for speed erodes the experience." },
+    { tension: "Security / screening vs. seamless flow", detail: "Safety and screening are non-negotiable, yet every checkpoint is a friction point that can sour arrival." },
+    { tension: "VIP exclusivity vs. inclusivity", detail: "Premium tiers drive margin, but visible exclusivity can undermine the welcoming, inclusive tone — especially for POD and general visitors." },
+    { tension: "Personalisation vs. operational simplicity", detail: "Tailored journeys delight, but each variation adds operational complexity and cost to run reliably." },
+  ];
+
+  return { sector: lib.label, persona_count: journeys.length, architecture, overlay, motConsolidation, priorities, universalKpis, specificKpis, tensions };
 }
