@@ -4,7 +4,14 @@
    removes leftover lime/dark theme, adds depth, spacing & icons.
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap');
+
+/* Poppins everywhere — overrides any Inter/Syne references below.
+   Display elements keep their larger sizes/weights but in Poppins. */
+html body, html body *,
+[style*="DM Mono"], [style*="Helvetica"] {
+  font-family: 'Poppins', -apple-system, 'Segoe UI', sans-serif !important;
+}
 
 :root {
   --vx-indigo: #4F46E5;
@@ -582,3 +589,41 @@ html, body { height: 100%; overflow: hidden; }   /* page itself never scrolls */
 .vx-nav-export { margin-top: 8px !important; padding: 8px !important; font-size: 12px !important; }
 .vx-sidebar-footer { display: none !important; }   /* drop the © footer to save vertical space */
 
+
+/* ============================================================
+   POPPINS TYPOGRAPHY HIERARCHY
+   ============================================================ */
+.bo-title, .bm-title, .vx-placeholder-title, .ed-dash-title,
+.vx-welcome-title, .stage-context-bannername {
+  font-weight: 700 !important; letter-spacing: -0.02em !important; line-height: 1.18 !important;
+}
+.bo-eyebrow, .bm-eyebrow, .vx-placeholder-eyebrow, .stage-context-badge2,
+.rv-section-title, .bo-section-title, .jm-kpi-name, .jm-curve-title,
+.vx-stage-name, .sh-panel-title, .sh-fields-title, .bm-card-title {
+  font-weight: 600 !important; letter-spacing: -0.005em !important;
+}
+.vx-placeholder-body, .bo-body, .bm-v, .rv-val, .stage-context-v,
+.px-attr-list li, .jm-tp-emotion-row, .jm-kpi-def {
+  font-weight: 400 !important; line-height: 1.55 !important;
+}
+.rv-generate-btn, .bm-trigger-btn, .stage-proceed-btn, .vx-btn-primary,
+.vx-nav-export, .vx-btn { font-weight: 600 !important; letter-spacing: 0 !important; }
+
+/* ============================================================
+   EXECUTIVE DASHBOARD NAV ENTRY (top-level, above stages)
+   ============================================================ */
+.vx-dashboard-nav {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 10px; margin-bottom: 8px; border-radius: 8px;
+  cursor: pointer; border-left: 3px solid transparent;
+  transition: background 0.15s;
+}
+.vx-dashboard-nav:hover { background: rgba(255,255,255,0.05); }
+.vx-dashboard-nav.active { background: rgba(255,255,255,0.08); border-left-color: #94A3B8; }
+.vx-dashboard-icon {
+  width: 24px; height: 24px; border-radius: 6px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #334155; color: #E2E8F0; font-size: 13px;
+}
+.vx-dashboard-label { font-size: 13px; font-weight: 600; color: #E2E8F0; }
+.vx-dashboard-nav.active .vx-dashboard-label { color: #fff; }
