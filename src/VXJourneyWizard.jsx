@@ -3911,6 +3911,16 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
           {/* Sidebar — stage-grouped dashboard navigation */}
           <aside className={`vx-sidebar ${sidebarOpen ? "mobile-open" : ""}`}>
             <div className="vx-nav-title">Journey Progress</div>
+
+            {/* Top-level: Executive Program Dashboard (landing screen) */}
+            <div
+              className={`vx-dashboard-nav ${current === 0 ? "active" : ""}`}
+              onClick={() => { setCurrent(0); setSidebarOpen(false); }}
+            >
+              <span className="vx-dashboard-icon">▦</span>
+              <span className="vx-dashboard-label">Executive Program Dashboard</span>
+            </div>
+
             {STAGE_GROUPS.map((g) => {
               // Stage completion state
               const isIntake = g.n === 1;
@@ -3936,9 +3946,10 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                   {expanded && (
                     <div className="vx-stage-items">
                       {isIntake ? (
-                        g.items.map((it) => {
+                        <>
+                        {g.items.map((it) => {
                           const done = current > it.id;
-                          const active = current === it.id;
+                          const active = current === it.id && !(current === 8 && unlockedStage === 1);
                           const locked = it.id > current + 0 && it.id > 8 ? true : false;
                           return (
                             <div
@@ -3950,7 +3961,18 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                               <span className="vx-nav-label">{it.label}</span>
                             </div>
                           );
-                        })
+                        })}
+                        {/* Stage 1 generated output — the Experience Design Brief */}
+                        {briefData && (
+                          <div
+                            className={`vx-nav-item ${current === 8 && unlockedStage === 1 ? "active" : ""} done`}
+                            onClick={() => { setCurrent(8); setUnlockedStage(1); setSidebarOpen(false); }}
+                          >
+                            <span className="vx-nav-mark">✓</span>
+                            <span className="vx-nav-label">Experience Design Brief</span>
+                          </div>
+                        )}
+                        </>
                       ) : (
                         (g.subItems || []).map((sub, si) => {
                           // A stage is reachable if the user has progressed at least that far.
@@ -5108,6 +5130,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                 return (
                   <div>
                     {unlockedStage === 1 && (<>
+                    {!briefData && (<>
                     <div className="vx-placeholder-eyebrow">Step 9 of 9 · ◇ Review</div>
                     <div className="vx-placeholder-title">Review & Generate</div>
                     <div className="vx-placeholder-body" style={{ marginBottom: 22 }}>
@@ -5134,8 +5157,17 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                         </div>
                       ))}
                     </div>
+                    </>)}
+
+                    {briefData && (
+                      <>
+                        <div className="vx-placeholder-eyebrow">Stage 1 of 4 · ◇ Output</div>
+                        <div className="vx-placeholder-title">Experience Design Brief</div>
+                      </>
+                    )}
 
                     <div className="rv-generate-wrap">
+                      {!briefData && (
                       <button
                         className="rv-generate-btn"
                         onClick={handleGenerateBrief}
@@ -5146,6 +5178,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                           : <>✦ Generate Experience Design Brief with AI</>
                         }
                       </button>
+                      )}
                       {aiError && <div className="rv-error">⚠ {aiError}</div>}
 
                       {briefData && (() => {
