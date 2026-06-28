@@ -545,3 +545,33 @@ html, body { height: 100%; overflow: hidden; }   /* page itself never scrolls */
   overflow: hidden !important;
   align-items: stretch !important;
 }
+
+/* ============================================================
+   WORKSTREAM 1d — FIXED FOOTER NAV + COMPACT SIDEBAR
+   ============================================================ */
+
+/* Bottom nav is now a fixed frame footer (sibling of vx-body), never scrolls */
+.vx-nav {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px !important;
+  border-top: 1px solid var(--vx-line) !important;
+  background: #FFFFFF !important;
+  z-index: 5;
+}
+
+/* Compact the left nav so all four stages + progress fit one screen, no scroll */
+.vx-sidebar { padding: 14px 12px 10px !important; gap: 2px !important; overflow-y: auto !important; }
+.vx-nav-title { padding: 2px 8px 8px !important; font-size: 10px !important; }
+.vx-stage-head { padding: 7px 8px !important; }
+.vx-stage-name { font-size: 12.5px !important; line-height: 1.25 !important; }
+.vx-stage-badge { width: 22px !important; height: 22px !important; font-size: 11px !important; }
+.vx-stage-items { padding: 1px 0 5px 12px !important; }
+.vx-nav-item { padding: 5px 9px !important; }
+.vx-nav-label { font-size: 12px !important; }
+.vx-nav-progress { padding: 10px 8px 4px !important; }
+.vx-nav-export { margin-top: 8px !important; padding: 8px !important; font-size: 12px !important; }
+.vx-sidebar-footer { display: none !important; }   /* drop the © footer to save vertical space */
+
