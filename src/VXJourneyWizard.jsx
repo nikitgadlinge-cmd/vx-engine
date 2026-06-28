@@ -22,6 +22,28 @@ const steps = [
   { id: 8, label: "Review", icon: "◇" },
 ];
 
+// Dashboard stage grouping (left-nav). Stage 1 holds the intake steps;
+// Stages 2-4 are the generated outputs reached from the Review screen.
+const STAGE_GROUPS = [
+  {
+    n: 1, name: "Structured Intake", color: "#F59E0B",
+    desc: "Capture the venue, context and priorities that shape everything downstream.",
+    items: [
+      { id: 1, label: "Sector & Context" },
+      { id: 2, label: "Experience Context" },
+      { id: 3, label: "Physical Features" },
+      { id: 4, label: "Operational Controls" },
+      { id: 5, label: "Stakeholder Profiling" },
+      { id: 6, label: "Priority Outcomes" },
+      { id: 7, label: "Template Selection" },
+      { id: 8, label: "Review & Generate" },
+    ],
+  },
+  { n: 2, name: "Benchmark Intelligence", color: "#3B82F6", desc: "Global leading practices matched to your goals.", outputKey: "benchmark" },
+  { n: 3, name: "Persona Synthesis", color: "#8B5CF6", desc: "The visitor personas your experience is designed around.", outputKey: "persona" },
+  { n: 4, name: "Journey Intelligence", color: "#10B981", desc: "Journey maps, Moments of Truth and the KPI framework.", outputKey: "journey" },
+];
+
 const accentColor = "#C8F04A";
 
 const stepContent = {
@@ -902,25 +924,6 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
     .pdf-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 20px; margin: 6px 0 12px; font-size: 10px; }
     .pdf-legend div { color: #475569; }
     .pdf-legend strong { color: #1E1B4B; }
-    .pdf-quote { background: #4F46E5; color: #fff; border-radius: 10px; padding: 12px 16px; margin: 8px 0 12px; font-size: 12px; font-style: italic; line-height: 1.45; page-break-inside: avoid; }
-    .pdf-meters { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 22px; background: #F7F8FC; border: 1px solid #ECECF6; border-radius: 10px; padding: 12px 14px; margin: 8px 0 12px; page-break-inside: avoid; }
-    .pdf-meter { display: flex; align-items: center; gap: 8px; font-size: 9.5px; }
-    .pdf-meter-k { min-width: 110px; color: #475569; font-weight: 600; }
-    .pdf-meter-track { flex: 1; height: 7px; background: #E4E6F2; border-radius: 6px; overflow: hidden; display: block; }
-    .pdf-meter-fill { display: block; height: 7px; border-radius: 6px; background: #6D28D9; }
-    .pdf-attr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
-    .pdf-attr { border: 1px solid #ECECF6; border-left: 3px solid #4F46E5; border-radius: 8px; padding: 8px 11px; page-break-inside: avoid; }
-    .pdf-attr.pain { border-left-color: #DC2626; }
-    .pdf-attr.goal { border-left-color: #16A34A; }
-    .pdf-attr.emote { border-left-color: #DB2777; }
-    .pdf-attr.expect { border-left-color: #0891B2; }
-    .pdf-attr-k { display: block; font-size: 9px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #4F46E5; margin-bottom: 4px; }
-    .pdf-attr.pain .pdf-attr-k { color: #DC2626; } .pdf-attr.goal .pdf-attr-k { color: #16A34A; }
-    .pdf-attr.emote .pdf-attr-k { color: #DB2777; } .pdf-attr.expect .pdf-attr-k { color: #0891B2; }
-    .pdf-attr ul { margin: 0; padding-left: 15px; } .pdf-attr li { font-size: 10.5px; color: #2B2A3F; margin: 2px 0; line-height: 1.4; }
-    .pdf-success { background: #ECFDF5; border: 1px solid #BBF7D0; border-radius: 8px; padding: 9px 12px; margin: 6px 0; }
-    .pdf-success .pdf-attr-k { color: #15803D; }
-    .pdf-success span { font-size: 11px; color: #166534; font-weight: 500; }
   `;
 
   const renderPdfFromHtml = (innerHtml, title) => {
@@ -957,18 +960,31 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
   const hmlPct = (lvl) => (lvl === "High" ? 100 : lvl === "Med" ? 60 : 35);
   const initialsOf = (name) => (name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
 
-  // Plain-language orientation block shown before each stage's results
-  const StageContext = ({ stage, where, done, expect, value }) => (
-    <div className="stage-context">
-      <div className="stage-context-badge">Stage {stage} of 4</div>
-      <div className="stage-context-grid">
-        <div className="stage-context-item"><span className="stage-context-k">Where you are</span><span className="stage-context-v">{where}</span></div>
-        <div className="stage-context-item"><span className="stage-context-k">What's done so far</span><span className="stage-context-v">{done}</span></div>
-        <div className="stage-context-item"><span className="stage-context-k">What this gives you</span><span className="stage-context-v">{expect}</span></div>
-        <div className="stage-context-item"><span className="stage-context-k">Why it matters</span><span className="stage-context-v">{value}</span></div>
+  // Plain-language orientation + transition banner shown before each stage's results
+  const STAGE_META = {
+    1: { color: "#F59E0B", name: "Structured Intake" },
+    2: { color: "#3B82F6", name: "Benchmark Intelligence" },
+    3: { color: "#8B5CF6", name: "Persona Synthesis" },
+    4: { color: "#10B981", name: "Journey Intelligence" },
+  };
+  const StageContext = ({ stage, where, done, expect, value, gate = "passed" }) => {
+    const meta = STAGE_META[stage] || STAGE_META[1];
+    return (
+      <div className="stage-context" style={{ "--stage-color": meta.color }}>
+        <div className="stage-context-banner" style={{ background: meta.color }}>
+          <span className="stage-context-badge2">Stage {stage} of 4</span>
+          <span className="stage-context-bannername">{meta.name}</span>
+          <span className={`stage-context-gate ${gate}`}>{gate === "passed" ? "✓ Quality Gate passed" : "Quality Gate pending"}</span>
+        </div>
+        <div className="stage-context-grid">
+          <div className="stage-context-item"><span className="stage-context-k">Where you are</span><span className="stage-context-v">{where}</span></div>
+          <div className="stage-context-item"><span className="stage-context-k">What's done so far</span><span className="stage-context-v">{done}</span></div>
+          <div className="stage-context-item"><span className="stage-context-k">What this gives you</span><span className="stage-context-v">{expect}</span></div>
+          <div className="stage-context-item"><span className="stage-context-k">Why it matters</span><span className="stage-context-v">{value}</span></div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const handleExportBriefPDF = async () => {
     if (!briefData) return;
@@ -1040,22 +1056,12 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
         }
         html += `<div class="pdf-section"><div class="pdf-h2">Full Persona Cards</div>`;
         full.forEach(p => {
-          const title = p.given_name ? `${esc(p.given_name)} — ${esc(p.name)}` : esc(p.name);
-          html += `<div class="pdf-card"><div class="pdf-persona-head"><span class="pdf-avatar" style="background:${p.pod_flag ? "#0E7A8A" : "#4F46E5"}">${esc(initialsOf(p.given_name || p.name))}</span><div><div class="pdf-card-name">${title}${p.pod_flag ? ' <span class="pdf-pill" style="background:#CFFAFE;color:#0E7490">POD</span>' : ""}</div><div class="pdf-card-sub" style="margin:0">${esc(p.archetype)} · ${esc(p.tier)}${p.segment ? " · " + esc(p.segment) : ""}</div></div></div>`;
-          if (p.quote) html += `<div class="pdf-quote">${esc(p.quote.replace(/^"|"$/g, ""))}</div>`;
-          if (p.identity) html += `<div class="pdf-kv"><span class="pdf-k">Who They Are</span><span class="pdf-v">${esc(p.identity)}</span></div>`;
-          if (p.meters) {
-            const m = p.meters;
-            const meter = (k, v) => `<div class="pdf-meter"><span class="pdf-meter-k">${k}</span><span class="pdf-meter-track"><span class="pdf-meter-fill" style="width:${v}%"></span></span></div>`;
-            html += `<div class="pdf-meters">${meter("Tech Savviness", m.tech_savviness)}${meter("Price Sensitivity", m.price_sensitivity)}${meter("Planning Style", m.planning_style)}${meter("Support Need", m.support_need)}${meter("Advocacy Potential", m.advocacy_potential)}</div>`;
-          }
-          const attr = (k, label, cls) => (p[k]?.length ? `<div class="pdf-attr ${cls}"><span class="pdf-attr-k">${label}</span><ul>${p[k].map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : "");
-          html += `<div class="pdf-attr-grid">`;
-          html += attr("motivations", "Motivations", "motiv") + attr("goals", "Goals", "goal") + attr("pain_points", "Pain Points", "pain") + attr("expectations", "Expectations", "expect") + attr("journey_risks", "Journey Risks", "pain") + attr("key_emotional_drivers", "Emotional Drivers", "emote");
-          html += `</div>`;
+          html += `<div class="pdf-card"><div class="pdf-persona-head"><span class="pdf-avatar" style="background:${p.pod_flag ? "#0E7A8A" : "#4F46E5"}">${esc(initialsOf(p.name))}</span><div><div class="pdf-card-name">${esc(p.name)}${p.pod_flag ? ' <span class="pdf-pill" style="background:#CFFAFE;color:#0E7490">POD</span>' : ""}</div><div class="pdf-card-sub" style="margin:0">${esc(p.archetype)} · ${esc(p.tier)}${p.segment ? " · " + esc(p.segment) : ""}</div></div></div>`;
+          if (p.identity) html += `<div class="pdf-kv"><span class="pdf-k">Identity</span><span class="pdf-v">${esc(p.identity)}</span></div>`;
+          const arr = (k, label) => (p[k]?.length ? `<div class="pdf-kv"><span class="pdf-k">${label}</span><span class="pdf-v"><ul class="pdf-list">${p[k].map(x => `<li>${esc(x)}</li>`).join("")}</ul></span></div>` : "");
+          html += arr("motivations", "Motivations") + arr("goals", "Goals") + arr("pain_points", "Pain Points") + arr("expectations", "Expectations") + arr("journey_risks", "Journey Risks") + arr("key_emotional_drivers", "Emotional Drivers");
           const kv = (k, label) => (p[k] ? `<div class="pdf-kv"><span class="pdf-k">${label}</span><span class="pdf-v">${esc(p[k])}</span></div>` : "");
-          html += kv("accessibility_needs", "Accessibility Needs") + kv("digital_behaviour", "Digital Behaviour") + kv("visit_behaviour", "Visit Behaviour") + kv("spending_behaviour", "Spending Behaviour");
-          if (p.success_definition) html += `<div class="pdf-success"><span class="pdf-attr-k">What Success Looks Like</span><span>${esc(p.success_definition)}</span></div>`;
+          html += kv("accessibility_needs", "Accessibility") + kv("digital_behaviour", "Digital Behaviour") + kv("visit_behaviour", "Visit Behaviour") + kv("spending_behaviour", "Spending") + kv("success_definition", "Success Definition");
           if (p.preferred_channels?.length) html += `<div class="pdf-kv"><span class="pdf-k">Channels</span><span class="pdf-chips">${p.preferred_channels.map(c => `<span class="pdf-chip">${esc(c)}</span>`).join("")}</span></div>`;
           html += `</div>`;
         });
@@ -1065,7 +1071,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
       } else if (personaData?.long_list) {
         html += `<div class="pdf-section"><div class="pdf-h2">Candidate Personas</div>`;
         personaData.long_list.forEach(p => {
-          html += `<div class="pdf-card"><div class="pdf-card-name">${p.given_name ? esc(p.given_name) + " — " : ""}${esc(p.name)}${p.pod_flag ? " · POD" : ""}</div><div class="pdf-card-sub">${esc(p.archetype)} · ${esc(p.tier)}</div>`;
+          html += `<div class="pdf-card"><div class="pdf-card-name">${esc(p.name)}${p.pod_flag ? " · POD" : ""}</div><div class="pdf-card-sub">${esc(p.archetype)} · ${esc(p.tier)}</div>`;
           if (p.description) html += `<div class="pdf-kv"><span class="pdf-k">Description</span><span class="pdf-v">${esc(p.description)}</span></div>`;
           html += `<div class="pdf-kv"><span class="pdf-k">Motivation</span><span class="pdf-v">${esc(p.motivation)}</span></div>`;
           html += `<div class="pdf-kv"><span class="pdf-k">Strategic Value</span><span class="pdf-v">${esc(p.strategic_value)}</span></div>`;
@@ -1234,6 +1240,11 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
   };
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [stageOpen, setStageOpen] = useState({ 1: true, 2: false, 3: false, 4: false });
+  // Overall journey progress: intake steps (0-8) weighted to 50%, the 3 generated outputs the other 50%.
+  const intakeFrac = Math.min(current, 8) / 8; // 0..1 across intake
+  const outputsDone = (benchmarkData ? 1 : 0) + ((fullPersonas || personaData) ? 1 : 0) + (journeyData ? 1 : 0);
+  const overallProgress = Math.round(intakeFrac * 50 + (outputsDone / 3) * 50);
 
   const toggleTone = (tone) =>
     setExpTones((prev) =>
@@ -3852,21 +3863,70 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
             className={`vx-sidebar-overlay ${sidebarOpen ? "mobile-open" : ""}`}
             onClick={() => setSidebarOpen(false)}
           />
-          {/* Sidebar */}
+          {/* Sidebar — stage-grouped dashboard navigation */}
           <aside className={`vx-sidebar ${sidebarOpen ? "mobile-open" : ""}`}>
-            {steps.map((s) => (
-              <div
-                key={s.id}
-                className={`vx-step-item ${current === s.id ? "active" : ""} ${current > s.id ? "done" : ""}`}
-                onClick={() => { setCurrent(s.id); setSidebarOpen(false); }}
-              >
-                <span className="step-num">
-                  {current > s.id ? "✓" : String(s.id + 1).padStart(2, "0")}
-                </span>
-                <span className="step-icon">{s.icon}</span>
-                <span className="step-label">{s.label}</span>
-              </div>
-            ))}
+            <div className="vx-nav-title">Journey Progress</div>
+            {STAGE_GROUPS.map((g) => {
+              // Stage completion state
+              const isIntake = g.n === 1;
+              const outputReady = g.outputKey === "benchmark" ? !!benchmarkData
+                : g.outputKey === "persona" ? (!!fullPersonas || !!personaData)
+                : g.outputKey === "journey" ? !!journeyData : false;
+              const intakeDone = current >= 8;
+              const stageDone = isIntake ? intakeDone : outputReady;
+              // A stage is "reachable": intake always; outputs only once Review reached
+              const reachable = isIntake || current >= 8;
+              const stageActive = isIntake ? (current >= 1 && current <= 8) : (current === 8 && reachable);
+              const expanded = stageOpen[g.n] ?? (g.n === 1);
+              return (
+                <div key={g.n} className={`vx-stage-group ${stageActive ? "active" : ""}`} style={{ "--stage-color": g.color }}>
+                  <div className="vx-stage-head" onClick={() => setStageOpen(o => ({ ...o, [g.n]: !expanded }))}>
+                    <span className={`vx-stage-badge ${stageDone ? "done" : ""}`} style={{ background: g.color }}>
+                      {stageDone ? "✓" : g.n}
+                    </span>
+                    <span className="vx-stage-name">{g.name}</span>
+                    <span className="vx-stage-chev">{expanded ? "▾" : "▸"}</span>
+                  </div>
+                  {expanded && (
+                    <div className="vx-stage-items">
+                      {isIntake ? (
+                        g.items.map((it) => {
+                          const done = current > it.id;
+                          const active = current === it.id;
+                          const locked = it.id > current + 0 && it.id > 8 ? true : false;
+                          return (
+                            <div
+                              key={it.id}
+                              className={`vx-nav-item ${active ? "active" : ""} ${done ? "done" : ""}`}
+                              onClick={() => { setCurrent(it.id); setSidebarOpen(false); }}
+                            >
+                              <span className="vx-nav-mark">{done ? "✓" : active ? "●" : "○"}</span>
+                              <span className="vx-nav-label">{it.label}</span>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div
+                          className={`vx-nav-item ${stageActive && outputReady ? "active" : ""} ${outputReady ? "done" : "locked"}`}
+                          onClick={() => { if (reachable) { setCurrent(8); setSidebarOpen(false); } }}
+                        >
+                          <span className="vx-nav-mark">{outputReady ? "✓" : reachable ? "●" : "🔒"}</span>
+                          <span className="vx-nav-label">{outputReady ? "View output" : reachable ? "Generate in Review" : "Locked"}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            <div className="vx-nav-progress">
+              <div className="vx-nav-progress-label">Journey Progress — {Math.round(overallProgress)}% Complete</div>
+              <div className="vx-nav-progress-track"><div className="vx-nav-progress-fill" style={{ width: `${overallProgress}%` }} /></div>
+              <button className="vx-nav-export" onClick={handleExportCompletePackage} disabled={!journeyData} title={journeyData ? "Export all outputs" : "Available once Stage 4 is generated"}>
+                ⬇ Export All Outputs
+              </button>
+            </div>
 
             <div className="vx-sidebar-footer">
               <p>VX Journey™<br />Intelligence Platform<br />© 2026 All Rights Reserved</p>
