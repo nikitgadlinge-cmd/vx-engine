@@ -627,3 +627,99 @@ html, body { height: 100%; overflow: hidden; }   /* page itself never scrolls */
 }
 .vx-dashboard-label { font-size: 13px; font-weight: 600; color: #E2E8F0; }
 .vx-dashboard-nav.active .vx-dashboard-label { color: #fff; }
+
+/* ============================================================
+   STAGE 4 — CONSULTING-GRADE JOURNEY MAP GRID (horizontal)
+   ============================================================ */
+.jmap-scroll { overflow-x: auto; padding: 4px 0 8px; }
+.jmap-grid {
+  display: grid;
+  grid-template-columns: 130px repeat(5, minmax(150px, 1fr));
+  gap: 1px;
+  background: var(--vx-line);
+  border: 1px solid var(--vx-line);
+  border-radius: 12px;
+  overflow: hidden;
+  min-width: 880px;
+}
+.jmap-rowlabel {
+  background: #F7F8FC; padding: 12px 12px; font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em; color: var(--vx-slate);
+  display: flex; align-items: center;
+}
+.jmap-corner { background: #1E1B3A; color: #fff; }
+.jmap-colhead {
+  background: linear-gradient(135deg, #4F46E5, #6D28D9); color: #fff;
+  padding: 12px 12px; font-size: 12.5px; font-weight: 700; text-align: center;
+  display: flex; align-items: center; justify-content: center;
+}
+.jmap-cell { background: #fff; padding: 11px 12px; font-size: 12px; line-height: 1.5; color: #2B2A3F; }
+.jmap-muted { color: #B8BDC9; }
+.jmap-ul { margin: 0; padding-left: 15px; }
+.jmap-ul li { margin: 2px 0; }
+.jmap-ul.pain li { color: #B91C1C; }
+.jmap-ul.opp li { color: #15803D; }
+.jmap-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.jmap-chip { background: #EEF0FF; border: 1px solid #D9DBFA; color: #4338CA; font-size: 10.5px; padding: 2px 8px; border-radius: 999px; }
+.jmap-curve-cell { grid-column: 2 / span 5; background: #FBFBFE; padding: 10px 12px; }
+.jmap-curve-svg { display: block; width: 100%; height: 64px; }
+.jmap-emotion-labels { display: grid; grid-template-columns: repeat(5, 1fr); margin-top: 4px; }
+.jmap-emotion-lbl { text-align: center; font-size: 11px; font-weight: 600; color: #6D28D9; }
+.jmap-mot { display: inline-block; font-size: 9.5px; font-weight: 700; letter-spacing: 0.04em; padding: 2px 8px; border-radius: 999px; margin: 2px 3px 2px 0; }
+.jmap-key { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 11px; color: var(--vx-mute); }
+.jmap-key-title { font-weight: 700; color: var(--vx-ink); }
+
+/* ============================================================
+   CONSOLIDATED CUSTOMER JOURNEY FRAMEWORK (strategy layer)
+   ============================================================ */
+.cf-section { margin-top: 20px; }
+.cf-h { font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 700; color: var(--vx-ink); padding-bottom: 8px; margin-bottom: 12px; border-bottom: 2px solid #E6E8F0; }
+.cf-arch-grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px; }
+.cf-arch-card { background: #fff; border: 1px solid var(--vx-line); border-top: 3px solid #0E7490; border-radius: 10px; padding: 12px; }
+.cf-arch-stage { font-weight: 700; font-size: 12px; color: var(--vx-ink); margin-bottom: 6px; }
+.cf-arch-shared { font-size: 11px; color: var(--vx-slate); margin-bottom: 6px; line-height: 1.45; }
+.cf-arch-div { font-size: 11px; color: #0E7490; line-height: 1.45; }
+@media (max-width: 900px) { .cf-arch-grid { grid-template-columns: 1fr 1fr; } }
+
+.cf-table { width: 100%; border-collapse: collapse; min-width: 620px; }
+.cf-table th { background: linear-gradient(135deg,#4F46E5,#6D28D9); color: #fff; font-size: 11.5px; font-weight: 600; padding: 9px 11px; text-align: left; }
+.cf-table th:first-child { border-top-left-radius: 8px; }
+.cf-table th:last-child { border-top-right-radius: 8px; }
+.cf-table td { border: 1px solid var(--vx-line); padding: 9px 11px; font-size: 11.5px; vertical-align: top; background: #fff; }
+.cf-td-stage { font-weight: 700; color: var(--vx-ink); background: #F7F8FC !important; }
+.cf-cell-beh { color: #2B2A3F; margin-bottom: 4px; }
+.cf-cell-emo { font-size: 10.5px; color: var(--vx-mute); display: flex; align-items: center; gap: 5px; }
+.cf-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+.cf-mot-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+.cf-mot-cluster { background: #fff; border: 1px solid var(--vx-line); border-top: 3px solid #64748B; border-radius: 10px; padding: 12px; }
+.cf-mot-clustertitle { font-weight: 700; font-size: 13px; margin-bottom: 8px; }
+.cf-mot-sub { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--vx-mute); margin: 8px 0 4px; font-weight: 600; }
+.cf-mot-item { font-size: 11.5px; color: #2B2A3F; padding: 4px 0; border-bottom: 1px solid #F1F2F8; }
+.cf-mot-item.common { font-weight: 600; }
+.cf-mot-count { color: #15803D; font-weight: 700; font-size: 10px; }
+.cf-mot-who { color: var(--vx-mute); font-size: 10px; }
+@media (max-width: 900px) { .cf-mot-grid { grid-template-columns: 1fr 1fr; } }
+
+.cf-prio-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cf-prio { display: flex; gap: 10px; background: #fff; border: 1px solid var(--vx-line); border-radius: 10px; padding: 11px 13px; }
+.cf-prio-num { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg,#5B52F0,#6D28D9); color: #fff; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+.cf-prio-title { font-weight: 600; font-size: 12.5px; color: var(--vx-ink); }
+.cf-prio-rationale { font-size: 11px; color: var(--vx-slate); line-height: 1.45; margin-top: 2px; }
+.cf-prio-src { font-size: 9.5px; color: #6D28D9; background: #EEF0FF; padding: 1px 7px; border-radius: 999px; margin-left: 4px; }
+@media (max-width: 900px) { .cf-prio-list { grid-template-columns: 1fr; } }
+
+.cf-kpi-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.cf-kpi-col { background: #fff; border: 1px solid var(--vx-line); border-radius: 10px; padding: 12px 14px; }
+.cf-kpi-coltitle { font-weight: 700; font-size: 12px; color: var(--vx-ink); margin-bottom: 8px; }
+.cf-kpi-note { font-weight: 400; font-size: 10px; color: var(--vx-mute); }
+.cf-kpi-row { display: flex; justify-content: space-between; gap: 10px; font-size: 11.5px; padding: 5px 0; border-bottom: 1px solid #F1F2F8; }
+.cf-kpi-target { color: #15803D; font-weight: 600; }
+.cf-kpi-who { color: var(--vx-mute); font-size: 10px; }
+@media (max-width: 900px) { .cf-kpi-cols { grid-template-columns: 1fr; } }
+
+.cf-tension-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cf-tension { background: linear-gradient(120deg, #FFF7ED, #FEF2F2); border: 1px solid #FED7AA; border-radius: 10px; padding: 12px 14px; }
+.cf-tension-title { font-weight: 700; font-size: 12.5px; color: #9A3412; margin-bottom: 5px; }
+.cf-tension-detail { font-size: 11.5px; color: #7C2D12; line-height: 1.5; }
+@media (max-width: 900px) { .cf-tension-grid { grid-template-columns: 1fr; } }
