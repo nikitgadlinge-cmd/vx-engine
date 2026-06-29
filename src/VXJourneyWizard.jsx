@@ -5456,6 +5456,8 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                                       </div>
                                     )}
                                     {catKey === "archetype_patterns" && <div className="bm-kv-grid">
+                                      {item.institution && <div className="bm-kv"><span className="bm-k">Benchmark Source</span><span className="bm-v">{item.institution}</span></div>}
+                                      {item.strategic_value && <div className="bm-kv"><span className="bm-k">Strategic Value</span><span className="bm-v accent">{item.strategic_value}</span></div>}
                                       {item.description && <div className="bm-kv" style={{gridColumn:"span 2"}}><span className="bm-k">Description</span><span className="bm-v">{item.description}</span></div>}
                                       {item.key_takeaway && <div className="bm-kv" style={{gridColumn:"span 2"}}><span className="bm-k">Key Takeaway</span><span className="bm-v accent">{item.key_takeaway}</span></div>}
                                     </div>}
@@ -5474,20 +5476,23 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                                       {item.context && <div className="bm-kv"><span className="bm-k">Context</span><span className="bm-v">{item.context}</span></div>}
                                     </div>}
                                     {catKey === "failure_mode_library" && <div className="bm-kv-grid">
+                                      {item.journey_stage && <div className="bm-kv"><span className="bm-k">Journey Stage</span><span className="bm-v accent">{item.journey_stage}</span></div>}
                                       {item.root_cause && <div className="bm-kv"><span className="bm-k">Root Cause</span><span className="bm-v">{item.root_cause}</span></div>}
                                       {item.consequence && <div className="bm-kv"><span className="bm-k">Consequence</span><span className="bm-v" style={{color:"#C07070"}}>{item.consequence}</span></div>}
+                                      {item.persona_sensitivity && <div className="bm-kv"><span className="bm-k">Persona Sensitivity</span><span className="bm-v">{item.persona_sensitivity}</span></div>}
                                       {item.mitigation && <div className="bm-kv" style={{gridColumn:"span 2"}}><span className="bm-k">Mitigation</span><span className="bm-v accent">{item.mitigation}</span></div>}
                                     </div>}
                                     {catKey === "kpi_norms" && <div className="bm-kv-grid">
                                       {item.unit && <div className="bm-kv"><span className="bm-k">Unit</span><span className="bm-v">{item.unit}</span></div>}
-                                      <div className="bm-kv"><span className="bm-k">Industry Range</span>
+                                      <div className="bm-kv" style={{gridColumn:"span 2"}}><span className="bm-k">Tiered Benchmark</span>
                                         <span className="bm-v">
-                                          <span style={{color:"#C07070"}}>{item.industry_low}</span>{" → "}
-                                          <span style={{color:"#C8B840"}}>{item.industry_avg}</span>{" → "}
-                                          <span style={{color:"#80C870"}}>{item.industry_high}</span>
+                                          <span style={{color:"#C07070"}}>Minimum {item.industry_low}</span>{"  ·  "}
+                                          <span style={{color:"#C8B840"}}>Good {item.industry_avg}</span>{"  ·  "}
+                                          <span style={{color:"#80C870"}}>World-Class {item.industry_high}</span>
                                         </span>
                                       </div>
                                       {item.source_type && <div className="bm-kv"><span className="bm-k">Source Type</span><span className="bm-v">{item.source_type}</span></div>}
+                                      {item.outcome_link && <div className="bm-kv"><span className="bm-k">Outcome Link</span><span className="bm-v">{item.outcome_link}</span></div>}
                                     </div>}
                                   </div>
                                 )}
@@ -5744,20 +5749,34 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                                           )}
                                           <div className="px-attr-grid">
                                             {list(p.motivations) && <div className="px-attr motiv"><span className="px-attr-k">✦ Motivations</span><ul className="px-attr-list">{p.motivations.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
-                                            {list(p.goals) && <div className="px-attr goal"><span className="px-attr-k">◎ Goals</span><ul className="px-attr-list">{p.goals.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
+                                            {list(p.core_needs) && <div className="px-attr goal"><span className="px-attr-k">◎ Core Needs</span><ul className="px-attr-list">{p.core_needs.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
                                             {list(p.pain_points) && <div className="px-attr pain"><span className="px-attr-k">▲ Pain Points</span><ul className="px-attr-list pain">{p.pain_points.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
-                                            {list(p.expectations) && <div className="px-attr expect"><span className="px-attr-k">◈ Expectations</span><ul className="px-attr-list">{p.expectations.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
-                                            {list(p.journey_risks) && <div className="px-attr pain"><span className="px-attr-k">⚠ Journey Risks</span><ul className="px-attr-list pain">{p.journey_risks.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
+                                            {list(p.design_tensions) && <div className="px-attr expect"><span className="px-attr-k">⚖ Design Tensions</span><ul className="px-attr-list">{p.design_tensions.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
                                             {list(p.key_emotional_drivers) && <div className="px-attr emote"><span className="px-attr-k">♥ Emotional Drivers</span><ul className="px-attr-list">{p.key_emotional_drivers.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
+                                            {list(p.benchmark_provenance) && <div className="px-attr goal"><span className="px-attr-k">◈ Benchmark Provenance</span><ul className="px-attr-list">{p.benchmark_provenance.map((x,i)=><li key={i}>{x}</li>)}</ul></div>}
                                           </div>
+                                          {p.emotional_journey_signature && <div className="px-success" style={{borderLeftColor:"#7C3AED"}}><span className="px-attr-k">〰 Emotional Journey Signature</span><p>{p.emotional_journey_signature}</p></div>}
+                                          {p.spend_profile && (
+                                            <div className="px-behaviour-grid" style={{marginTop:12}}>
+                                              <div className="px-beh"><span className="bm-k">$ Spend Range</span><span className="bm-v">{p.spend_profile.aed_range}</span></div>
+                                              <div className="px-beh"><span className="bm-k">⏱ Dwell Time</span><span className="bm-v">{p.spend_profile.dwell}</span></div>
+                                              <div className="px-beh"><span className="bm-k">◉ Engagement Style</span><span className="bm-v">{p.spend_profile.engagement}</span></div>
+                                            </div>
+                                          )}
                                           <div className="px-behaviour-grid">
                                             {p.accessibility_needs && <div className="px-beh"><span className="bm-k">♿ Accessibility Needs</span><span className="bm-v">{p.accessibility_needs}</span></div>}
-                                            {p.digital_behaviour && <div className="px-beh"><span className="bm-k">▣ Digital Behaviour</span><span className="bm-v">{p.digital_behaviour}</span></div>}
-                                            {p.visit_behaviour && <div className="px-beh"><span className="bm-k">◉ Visit Behaviour</span><span className="bm-v">{p.visit_behaviour}</span></div>}
-                                            {p.spending_behaviour && <div className="px-beh"><span className="bm-k">$ Spending Behaviour</span><span className="bm-v">{p.spending_behaviour}</span></div>}
+                                            {p.cultural_language && <div className="px-beh"><span className="bm-k">⚐ Cultural & Language</span><span className="bm-v">{p.cultural_language}</span></div>}
+                                            {p.control_sensitivity && <div className="px-beh"><span className="bm-k">⊘ Control Sensitivity</span><span className="bm-v">{p.control_sensitivity}</span></div>}
                                           </div>
+                                          {p.strategic_value_detail && (
+                                            <div className="px-behaviour-grid" style={{marginTop:12}}>
+                                              <div className="px-beh"><span className="bm-k">↑ Revenue Potential</span><span className="bm-v">{p.strategic_value_detail.revenue}</span></div>
+                                              <div className="px-beh"><span className="bm-k">📣 Advocacy Potential</span><span className="bm-v">{p.strategic_value_detail.advocacy}</span></div>
+                                              <div className="px-beh"><span className="bm-k">♡ Loyalty Potential</span><span className="bm-v">{p.strategic_value_detail.loyalty}</span></div>
+                                            </div>
+                                          )}
                                           {p.success_definition && <div className="px-success"><span className="px-attr-k">★ What Success Looks Like</span><p>{p.success_definition}</p></div>}
-                                          {list(p.preferred_channels) && <div style={{marginTop:12}}><span className="bm-k" style={{display:"block",marginBottom:6}}>Preferred Channels</span><div className="bo-chips">{p.preferred_channels.map((c,i)=><span key={i} className="bo-chip">{i+1}. {c}</span>)}</div></div>}
+                                          {list(p.channel_preferences) && <div style={{marginTop:12}}><span className="bm-k" style={{display:"block",marginBottom:6}}>Channel Preferences (ranked)</span><div className="px-channels">{p.channel_preferences.map((c,i)=><div key={i} className="px-channel"><span className="px-channel-rank">{c.rank}</span><div><span className="px-channel-name">{c.channel}</span><span className="px-channel-why">{c.why}</span></div></div>)}</div></div>}
                                         </div>
                                       )}
                                     </div>
@@ -5907,7 +5926,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
 
                                       {/* Touchpoints */}
                                       <div className="jmap-rowlabel">Touchpoints</div>
-                                      {STG.map((s) => <div key={s.key} className="jmap-cell"><div className="jmap-chips">{(active.stages?.[s.key]?.touchpoints || []).map((t, i) => <span key={i} className="jmap-chip">{t.name}</span>)}</div></div>)}
+                                      {STG.map((s) => <div key={s.key} className="jmap-cell"><div className="jmap-chips">{(active.stages?.[s.key]?.touchpoints || []).map((t, i) => <span key={i} className={`jmap-chip ${t.mot_flag ? "mot" : ""}`} title={`Goal: ${t.persona_goal || "—"}\nExpected: ${t.expected_experience || "—"}\nEmotion: ${t.emotion_label || "—"} (${t.emotion_score ?? "—"}/10)\nFriction: ${t.friction_conditions || "—"}\nDelight: ${t.delight_conditions || "—"}${t.mot_flag ? "\n★ Moment of Truth" : ""}`}>{t.mot_flag ? "★ " : ""}{t.name}</span>)}</div></div>)}
 
                                       {/* Emotional Curve — spans all 5 columns */}
                                       <div className="jmap-rowlabel">Emotional Curve</div>
