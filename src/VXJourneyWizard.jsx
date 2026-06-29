@@ -937,6 +937,10 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
     .pdf-sub { font-size: 12px; color: #6B7280; }
     .pdf-section { margin-bottom: 22px; page-break-inside: avoid; }
     .pdf-h2 { font-size: 15px; font-weight: 700; color: #312E81; margin: 0 0 10px; padding-bottom: 6px; border-bottom: 1px solid #E5E7EB; }
+    .pdf-h1 { font-size: 22px; font-weight: 800; color: #0E7490; margin: 0 0 4px; }
+    table.pdf-jgrid { margin-bottom: 14px; }
+    table.pdf-jgrid td, table.pdf-jgrid th { font-size: 10px; vertical-align: top; }
+    ol.pdf-list { margin: 4px 0; padding-left: 18px; } ol.pdf-list li { font-size: 12px; color: #1F2937; margin: 3px 0; }
     .pdf-card { border: 1px solid #E5E7EB; border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; page-break-inside: avoid; background: #FCFCFE; }
     .pdf-card-name { font-size: 16px; font-weight: 800; color: #1E1B4B; }
     .pdf-card-sub { font-size: 11px; color: #6366F1; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
@@ -1106,11 +1110,15 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
         full.forEach(p => {
           html += `<div class="pdf-card"><div class="pdf-persona-head"><span class="pdf-avatar" style="background:${p.pod_flag ? "#0E7A8A" : "#4F46E5"}">${esc(initialsOf(p.name))}</span><div><div class="pdf-card-name">${esc(p.name)}${p.pod_flag ? ' <span class="pdf-pill" style="background:#CFFAFE;color:#0E7490">POD</span>' : ""}</div><div class="pdf-card-sub" style="margin:0">${esc(p.archetype)} · ${esc(p.tier)}${p.segment ? " · " + esc(p.segment) : ""}</div></div></div>`;
           if (p.identity) html += `<div class="pdf-kv"><span class="pdf-k">Identity</span><span class="pdf-v">${esc(p.identity)}</span></div>`;
+          if (p.quote) html += `<div class="pdf-kv"><span class="pdf-k">In their words</span><span class="pdf-v" style="font-style:italic">${esc(p.quote)}</span></div>`;
           const arr = (k, label) => (p[k]?.length ? `<div class="pdf-kv"><span class="pdf-k">${label}</span><span class="pdf-v"><ul class="pdf-list">${p[k].map(x => `<li>${esc(x)}</li>`).join("")}</ul></span></div>` : "");
-          html += arr("motivations", "Motivations") + arr("goals", "Goals") + arr("pain_points", "Pain Points") + arr("expectations", "Expectations") + arr("journey_risks", "Journey Risks") + arr("key_emotional_drivers", "Emotional Drivers");
+          html += arr("motivations", "Motivations") + arr("core_needs", "Core Needs") + arr("pain_points", "Pain Points") + arr("design_tensions", "Design Tensions") + arr("key_emotional_drivers", "Emotional Drivers") + arr("benchmark_provenance", "Benchmark Provenance");
           const kv = (k, label) => (p[k] ? `<div class="pdf-kv"><span class="pdf-k">${label}</span><span class="pdf-v">${esc(p[k])}</span></div>` : "");
-          html += kv("accessibility_needs", "Accessibility") + kv("digital_behaviour", "Digital Behaviour") + kv("visit_behaviour", "Visit Behaviour") + kv("spending_behaviour", "Spending") + kv("success_definition", "Success Definition");
-          if (p.preferred_channels?.length) html += `<div class="pdf-kv"><span class="pdf-k">Channels</span><span class="pdf-chips">${p.preferred_channels.map(c => `<span class="pdf-chip">${esc(c)}</span>`).join("")}</span></div>`;
+          if (p.emotional_journey_signature) html += `<div class="pdf-kv"><span class="pdf-k">Emotional Journey Signature</span><span class="pdf-v">${esc(p.emotional_journey_signature)}</span></div>`;
+          if (p.spend_profile) html += `<div class="pdf-kv"><span class="pdf-k">Spend Profile</span><span class="pdf-v">${esc(p.spend_profile.aed_range)} · ${esc(p.spend_profile.dwell)} · ${esc(p.spend_profile.engagement)}</span></div>`;
+          html += kv("accessibility_needs", "Accessibility") + kv("cultural_language", "Cultural & Language") + kv("control_sensitivity", "Control Sensitivity") + kv("success_definition", "Success Definition");
+          if (p.strategic_value_detail) html += `<div class="pdf-kv"><span class="pdf-k">Strategic Value</span><span class="pdf-v">Revenue: ${esc(p.strategic_value_detail.revenue)} · Advocacy: ${esc(p.strategic_value_detail.advocacy)} · Loyalty: ${esc(p.strategic_value_detail.loyalty)}</span></div>`;
+          if (p.channel_preferences?.length) html += `<div class="pdf-kv"><span class="pdf-k">Channels (ranked)</span><span class="pdf-v"><ol class="pdf-list">${p.channel_preferences.map(c => `<li><strong>${esc(c.channel)}</strong> — ${esc(c.why)}</li>`).join("")}</ol></span></div>`;
           html += `</div>`;
         });
         html += `</div>`;
@@ -1142,6 +1150,18 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
       html += `<div class="pdf-legend"><div><strong>Pain</strong> — how frustrating the step is (lower is better)</div><div><strong>Delight</strong> — how positive it feels (higher is better)</div><div><strong>Risk</strong> — chance it goes wrong (lower is better)</div><div><strong>Access. Barrier</strong> — difficulty for accessibility needs (lower is better)</div><div><strong>Ops Effort</strong> — staff effort to run it well (lower is easier)</div><div><strong>Priority</strong> — how important to get right (higher = focus here)</div></div>`;
       journeyData.journeys.forEach(j => {
         html += `<div class="pdf-section"><div class="pdf-h2">${esc(j.persona_name)} — Journey Map</div>`;
+
+        // Horizontal McKinsey-style grid summary (Goal / Emotion / MoTs per stage)
+        const gridStages = Object.keys(STAGE_LABELS);
+        const motByStage = {};
+        (j.moments_of_truth || []).forEach(m => { const k = (m.stage||"").toLowerCase().replace(/[^a-z]/g,""); (motByStage[k] = motByStage[k]||[]).push(m); });
+        const motTag = { Risk:"#B91C1C", Conversion:"#1D4ED8", Delight:"#15803D", Loyalty:"#6D28D9" };
+        html += `<table class="pdf-tbl pdf-jgrid"><tr><th>Stage</th>${gridStages.map(sk=>`<th>${esc(STAGE_LABELS[sk])}</th>`).join("")}</tr>`;
+        html += `<tr><td><strong>Persona Goal</strong></td>${gridStages.map(sk=>`<td>${esc(j.stages?.[sk]?.persona_goal||"—")}</td>`).join("")}</tr>`;
+        html += `<tr><td><strong>Emotion</strong></td>${gridStages.map(sk=>{const s=j.stages?.[sk];return `<td>${esc(s?.emotion_label||"—")} ${s?.avg_sentiment!=null?`(${Math.round((s.avg_sentiment)/10)}/10)`:""}</td>`;}).join("")}</tr>`;
+        html += `<tr><td><strong>Moments of Truth</strong></td>${gridStages.map(sk=>{const ms=motByStage[STAGE_LABELS[sk].toLowerCase().replace(/[^a-z]/g,"")]||[];return `<td>${ms.length?ms.map(m=>`<span class="pdf-pill" style="background:${(motTag[m.mot_type]||"#6B7280")}22;color:${motTag[m.mot_type]||"#6B7280"}">${esc(m.mot_type||"")}</span>`).join(" "):"—"}</td>`;}).join("")}</tr>`;
+        html += `</table>`;
+
         Object.keys(STAGE_LABELS).forEach(sk => {
           const st = j.stages?.[sk];
           if (!st) return;
@@ -1176,21 +1196,57 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
         });
         const mots = j.moments_of_truth || [];
         if (mots.length) {
-          html += `<div class="pdf-h2">Moments of Truth</div>`;
+          html += `<div class="pdf-h2">Moments of Truth (persona-specific)</div>`;
           mots.forEach(m => {
             const col = { Critical: "#DC2626", High: "#D97706", Medium: "#0891B2", Low: "#16A34A" }[m.classification] || "#6B7280";
-            html += `<div class="pdf-card"><div class="pdf-card-name" style="font-size:14px">${esc(m.name || m.touchpoint)} <span class="pdf-pill" style="background:${col}22;color:${col}">${esc(m.classification)}</span></div><div class="pdf-card-sub">${esc(m.stage)} · ${esc(m.touchpoint)}</div>`;
-            const kv = (k, label) => (m[k] ? `<div class="pdf-kv"><span class="pdf-k">${label}</span><span class="pdf-v">${esc(m[k])}</span></div>` : "");
-            html += kv("reason_detected", "Reason Detected") + kv("impact", "Impact") + kv("risk", "Risk") + kv("recommendation", "Recommendation") + kv("owner", "Owner");
+            html += `<div class="pdf-card"><div class="pdf-card-name" style="font-size:14px">${esc(m.name || m.touchpoint)} <span class="pdf-pill" style="background:${col}22;color:${col}">${esc(m.mot_type || m.classification)}</span></div><div class="pdf-card-sub">${esc(m.stage)} · ${esc(m.touchpoint)}</div>`;
+            if (m.reason_detected) html += `<div class="pdf-kv"><span class="pdf-k">Why It Matters</span><span class="pdf-v">${esc(m.reason_detected)}</span></div>`;
+            if (Array.isArray(m.interventions) && m.interventions.length) html += `<div class="pdf-kv"><span class="pdf-k">Design Interventions</span><span class="pdf-v"><ol class="pdf-list">${m.interventions.map(it => `<li>${esc(it)}</li>`).join("")}</ol></span></div>`;
+            if (m.failure_link) html += `<div class="pdf-kv"><span class="pdf-k">Linked Failure Mode</span><span class="pdf-v">${esc(m.failure_link)}</span></div>`;
+            if (m.benchmark) html += `<div class="pdf-kv"><span class="pdf-k">Benchmark Reference</span><span class="pdf-v">${esc(m.benchmark)}</span></div>`;
+            if (m.owner) html += `<div class="pdf-kv"><span class="pdf-k">Owner</span><span class="pdf-v">${esc(m.owner)}</span></div>`;
             html += `</div>`;
           });
         }
         const kpis = j.kpis || [];
         if (kpis.length) {
-          html += `<div class="pdf-h2">KPI Framework</div><table class="pdf-tbl"><tr><th>KPI</th><th>Tier</th><th>Target</th><th>Owner</th><th>Frequency</th></tr>${kpis.map(k => `<tr><td>${esc(k.name)}</td><td>${esc(k.tier)}</td><td>${esc(k.target)}</td><td>${esc(k.owner)}</td><td>${esc(k.frequency)}</td></tr>`).join("")}</table>`;
+          html += `<div class="pdf-h2">KPI Framework (per Moment of Truth)</div><table class="pdf-tbl"><tr><th>KPI</th><th>Linked MoT</th><th>Min / Good / World-Class</th><th>Measurement</th><th>Freq</th><th>Owner</th></tr>${kpis.map(k => {
+            const t = k.benchmark_tiers ? `${esc(k.benchmark_tiers.minimum)} / ${esc(k.benchmark_tiers.good)} / ${esc(k.benchmark_tiers.world_class)}` : esc(k.target || "—");
+            return `<tr><td><strong>${esc(k.name)}</strong></td><td>${esc(k.linked_mot_name || "—")}${k.mot_type ? ` (${esc(k.mot_type)})` : ""}</td><td>${t}</td><td>${esc(k.measurement_method || k.data_source || "—")}</td><td>${esc(k.frequency || "—")}</td><td>${esc(k.owner || "—")}</td></tr>`;
+          }).join("")}</table>`;
         }
         html += `</div>`;
       });
+
+      // Final section — Consolidated Customer Journey Mapping Framework
+      try {
+        const cf = buildConsolidatedFramework(journeyData, briefData, benchmarkData, briefData?.sector_context?.sector_id || selectedSector?.id);
+        html += `<div class="pdf-section" style="page-break-before:always"><div class="pdf-h1">Consolidated Customer Journey Mapping Framework</div><div class="pdf-sub">${esc(cf.sector)} · ${cf.persona_count} personas synthesised</div></div>`;
+        // 1 Architecture
+        html += `<div class="pdf-h2">01 · Journey Architecture Overview</div><table class="pdf-tbl"><tr><th>Stage</th><th>Shared</th><th>Divergence</th></tr>${cf.architecture.map(a=>`<tr><td><strong>${esc(a.stage)}</strong></td><td>${esc(a.shared)}</td><td>${esc(a.divergence)}</td></tr>`).join("")}</table>`;
+        // 2 Persona overlay
+        html += `<div class="pdf-h2">02 · Persona Overlay Grid</div><table class="pdf-tbl"><tr><th>Stage</th>${(cf.overlay[0]?.cells||[]).map(c=>`<th>${esc(c.persona)}</th>`).join("")}</tr>${cf.overlay.map(row=>`<tr><td><strong>${esc(row.stage)}</strong></td>${row.cells.map(c=>`<td>${esc(c.behaviour)}<br><em style="color:#6B7280">${esc(c.emotion)}</em></td>`).join("")}</tr>`).join("")}</table>`;
+        // 3 MoT consolidation
+        html += `<div class="pdf-h2">03 · Moments of Truth Consolidation</div>`;
+        cf.motConsolidation.forEach(cl=>{
+          html += `<div class="pdf-card"><div class="pdf-card-name" style="font-size:13px">${esc(cl.cluster)}</div>`;
+          if (cl.common.length) html += `<div class="pdf-kv"><span class="pdf-k">Common</span><span class="pdf-v">${cl.common.map(m=>`${esc(m.name)} (×${m.personas.length})`).join("; ")}</span></div>`;
+          if (cl.specific.length) html += `<div class="pdf-kv"><span class="pdf-k">Persona-specific</span><span class="pdf-v">${cl.specific.map(m=>`${esc(m.name)} — ${esc(m.personas[0])}`).join("; ")}</span></div>`;
+          if (!cl.common.length && !cl.specific.length) html += `<div class="pdf-v">None</div>`;
+          html += `</div>`;
+        });
+        // 4 Priorities
+        html += `<div class="pdf-h2">04 · Experience Design Priorities</div><div class="pdf-card"><ol class="pdf-list">${cf.priorities.map(p=>`<li><strong>${esc(p.priority)}</strong> — ${esc(p.rationale)} <em>(${esc(p.source)})</em></li>`).join("")}</ol></div>`;
+        // 5 KPI consolidation
+        html += `<div class="pdf-h2">05 · KPI Consolidation</div><table class="pdf-tbl"><tr><th>Scope</th><th>KPI</th><th>Detail</th></tr>`;
+        html += cf.universalKpis.map(k=>`<tr><td><strong>Universal</strong></td><td>${esc(k.name)}</td><td>${esc(k.target||"")}</td></tr>`).join("");
+        html += cf.specificKpis.map(k=>`<tr><td>Persona-specific</td><td>${esc(k.name)}</td><td>${esc((k.personas||[]).join(", "))}</td></tr>`).join("");
+        html += `</table>`;
+        // 6 Tensions
+        html += `<div class="pdf-h2">06 · Design Tensions</div>`;
+        cf.tensions.forEach(t=>{ html += `<div class="pdf-card"><div class="pdf-card-name" style="font-size:13px">⚖ ${esc(t.tension)}</div><div class="pdf-v">${esc(t.detail)}</div></div>`; });
+      } catch (cfErr) { /* consolidated framework optional in PDF */ }
+
       await renderPdfFromHtml(html, "VX-Stage4-Journey-Maps.pdf");
     } catch (e) { alert(e.message); } finally { setPdfBusy(""); }
   };
@@ -3858,6 +3914,47 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
         .pf-summary-bar, .pf-summary-bar * { color: #475569 !important; }
         .bo-body { border: 1px solid #E8EBF1 !important; }
 
+        /* ════════════════════════════════════════════════════════════════
+           ACCESSIBLE HOVER PALETTE (Part 3) — kill all near-black hovers.
+           Light premium hover bg + dark-navy text, WCAG-readable, soft ease.
+           ════════════════════════════════════════════════════════════════ */
+        .ec-radio-btn, .oc-header, .rv-section-header, .bo-section-header,
+        .bm-card-header, .sector-card, .ts-card, .oc-radio-card,
+        .jm-persona-tab, .jm-stage-node, .sh-tier-row, .pf-table tbody tr,
+        .pt-table tbody tr, .vx-topbar-btn {
+          transition: background-color 0.22s ease, border-color 0.22s ease, color 0.22s ease !important;
+        }
+        .ec-radio-btn:hover {
+          background: #E6F2FF !important; border-color: #4F46E5 !important; color: #1A2B49 !important;
+        }
+        .ec-radio-btn:hover * { color: #1A2B49 !important; }
+        .oc-header:hover, .rv-section-header:hover, .bo-section-header:hover,
+        .bm-card-header:hover, .sh-tier-row:hover {
+          background: #F5F7FA !important;
+        }
+        .oc-header:hover *, .rv-section-header:hover *, .bo-section-header:hover *,
+        .bm-card-header:hover *, .sh-tier-row:hover * { color: #1A2B49 !important; }
+        .sector-card:hover, .ts-card:hover, .oc-radio-card:hover,
+        .jm-persona-tab:hover, .jm-stage-node:hover {
+          background: #E6F2FF !important; border-color: #4F46E5 !important;
+        }
+        .sector-card:hover *, .ts-card:hover *, .oc-radio-card:hover * { color: #1A2B49 !important; }
+        .pf-table tbody tr:hover, .pf-table tbody tr.pf-row-filled:hover,
+        .pt-table tbody tr:hover, .pt-table tbody tr.pt-row-set:hover,
+        .bo-table tbody tr:hover {
+          background: #F5F7FA !important;
+        }
+        .pf-table tbody tr:hover td, .pt-table tbody tr:hover td, .bo-table tbody tr:hover td { color: #1A2B49 !important; }
+        /* Dropdown option hover/selection — keep light & readable */
+        .ec-select option:hover, .ec-select option:checked,
+        .sector-select option:hover, .sector-select option:checked,
+        .pf-select option:hover, .pt-select option:hover {
+          background: #E6F2FF !important; color: #1A2B49 !important;
+        }
+        /* Active/selected states stay distinct but light */
+        .ec-radio-btn.active { background: #EEF0FF !important; border-color: #4F46E5 !important; color: #312E81 !important; }
+        .sector-card.selected, .ts-card.primary { background: #F5F6FF !important; border-color: #4F46E5 !important; }
+
         /* ════ Universal grid-collapse guard: never let a track shrink to per-character width ════ */
         .bo-kv-grid, .jm-tp-grid, .jm-score-grid, .jm-kpi-meta { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; }
         .bo-kv, .bo-v, .bo-k, .jm-tp-v, .jm-tp-k, .jm-kpi-mk, .rv-val, .rv-key, .sh-tier-def, .sh-tier-label { min-width: 0; overflow-wrap: anywhere; }
@@ -5978,17 +6075,17 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                                             <span className="bm-card-institution">{m.touchpoint}</span>
                                           </div>
                                           <div className="bm-card-header-right">
-                                            <span className="jm-mot-type" style={{color: motColor(m.classification), borderColor: motColor(m.classification)}}>{m.classification}</span>
+                                            <span className="jm-mot-type" style={{color: motColor(m.classification), borderColor: motColor(m.classification)}}>{m.mot_type || m.classification}</span>
                                             <span className="bm-chevron">▾</span>
                                           </div>
                                         </div>
                                         {open && (
                                           <div className="bm-card-body">
                                             <div className="bm-kv-grid">
-                                              {m.reason_detected && <div className="bm-kv" style={{gridColumn:"span 2"}}><span className="bm-k">Reason Detected</span><span className="bm-v">{m.reason_detected}</span></div>}
-                                              {m.impact && <div className="bm-kv"><span className="bm-k">Impact</span><span className="bm-v">{m.impact}</span></div>}
-                                              {m.risk && <div className="bm-kv"><span className="bm-k">Risk</span><span className="bm-v" style={{color:"#C08A8A"}}>{m.risk}</span></div>}
-                                              {m.recommendation && <div className="bm-kv" style={{gridColumn:"span 2"}}><span className="bm-k">Recommendation</span><span className="bm-v accent" style={{color:"#C8F04A"}}>→ {m.recommendation}</span></div>}
+                                              {m.reason_detected && <div className="bm-kv" style={{gridColumn:"span 2"}}><span className="bm-k">Why It Matters (this persona)</span><span className="bm-v">{m.reason_detected}</span></div>}
+                                              {Array.isArray(m.interventions) && m.interventions.length > 0 && <div className="bm-kv" style={{gridColumn:"span 2"}}><span className="bm-k">Design Interventions</span><span className="bm-v"><ol className="jm-mot-interventions">{m.interventions.map((it,ii)=><li key={ii}>{it}</li>)}</ol></span></div>}
+                                              {m.failure_link && <div className="bm-kv"><span className="bm-k">Linked Failure Mode</span><span className="bm-v" style={{color:"#C08A8A"}}>{m.failure_link}</span></div>}
+                                              {m.benchmark && <div className="bm-kv"><span className="bm-k">Benchmark Reference</span><span className="bm-v">{m.benchmark}</span></div>}
                                               {m.owner && <div className="bm-kv"><span className="bm-k">Owner</span><span className="bm-v">{m.owner}</span></div>}
                                             </div>
                                           </div>
@@ -6017,16 +6114,22 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                                               </div>
                                               {k.metric_definition && <div className="jm-kpi-def">{k.metric_definition}</div>}
                                               {k.formula && <div className="jm-kpi-formula">ƒ {k.formula}</div>}
+                                              {k.benchmark_tiers && (
+                                                <div className="jm-kpi-tierbar">
+                                                  <span className="jm-kpi-tierseg min">Min {k.benchmark_tiers.minimum}</span>
+                                                  <span className="jm-kpi-tierseg good">Good {k.benchmark_tiers.good}</span>
+                                                  <span className="jm-kpi-tierseg wc">World-Class {k.benchmark_tiers.world_class}</span>
+                                                </div>
+                                              )}
                                               <div className="jm-kpi-meta">
-                                                <div className="jm-kpi-mk"><span>Target</span><strong style={{color:"#C8F04A"}}>{k.target || "—"}</strong></div>
+                                                {k.metric_type && <div className="jm-kpi-mk"><span>Metric Type</span><strong>{k.metric_type}</strong></div>}
+                                                <div className="jm-kpi-mk"><span>Target (Good)</span><strong style={{color:"#4F46E5"}}>{k.target || "—"}</strong></div>
+                                                <div className="jm-kpi-mk"><span>Measurement</span><strong>{k.measurement_method || k.data_source || "—"}</strong></div>
                                                 <div className="jm-kpi-mk"><span>Frequency</span><strong>{k.frequency || "—"}</strong></div>
                                                 <div className="jm-kpi-mk"><span>Owner</span><strong>{k.owner || "—"}</strong></div>
-                                                <div className="jm-kpi-mk"><span>Data Source</span><strong>{k.data_source || "—"}</strong></div>
+                                                {k.linked_mot_name && <div className="jm-kpi-mk"><span>Linked MoT</span><strong>{k.linked_mot_name} ({k.mot_type})</strong></div>}
                                               </div>
-                                              <div className="jm-kpi-ind">
-                                                {k.leading_indicator && <div className="jm-kpi-indrow"><span className="jm-kpi-indtag lead">Leading</span>{k.leading_indicator}</div>}
-                                                {k.lagging_indicator && <div className="jm-kpi-indrow"><span className="jm-kpi-indtag lag">Lagging</span>{k.lagging_indicator}</div>}
-                                              </div>
+                                              {k.escalation_trigger && <div className="jm-kpi-escalation">⚠ Escalation: {k.escalation_trigger}</div>}
                                             </div>
                                           ))}
                                         </div>
