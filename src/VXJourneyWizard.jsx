@@ -956,6 +956,28 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
     table.jm-emotline { width: 100%; border-collapse: collapse; margin-top: 2px; } table.jm-emotline td { border: none; text-align: center; font-size: 9px; font-weight: 700; color: #6D28D9; padding: 1px; }
     .jm-mottag { display: inline-block; font-size: 7.5px; font-weight: 700; letter-spacing: 0.04em; padding: 1px 6px; border-radius: 9px; margin: 1px 2px 1px 0; }
     .jm-key { font-size: 9px; color: #6B7280; margin: 4px 0 6px; }
+    /* Persona card — mirrors the live wizard */
+    .pdf-pcard { border: 1px solid #E5E7EB; border-radius: 12px; padding: 16px 18px; margin-bottom: 16px; page-break-inside: avoid; background: #FFFFFF; }
+    .pdf-quote { background: linear-gradient(120deg, #5B52F0, #7C3AED); color: #fff; font-style: italic; font-weight: 600; font-size: 12.5px; padding: 12px 16px; border-radius: 10px; margin: 10px 0; }
+    .pdf-who { margin: 8px 0; } .pdf-who div { font-size: 12px; color: #1F2937; margin-top: 3px; }
+    .pdf-attr-k { font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: #4F46E5; font-weight: 700; }
+    .pdf-meters { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; margin: 10px 0; }
+    .pdf-meter { display: flex; align-items: center; gap: 8px; }
+    .pdf-meter-k { font-size: 10px; color: #475569; width: 110px; flex-shrink: 0; }
+    .pdf-meter-track { flex: 1; height: 6px; background: #E9EBF5; border-radius: 4px; overflow: hidden; }
+    .pdf-meter-fill { display: block; height: 100%; background: linear-gradient(90deg, #5B52F0, #7C3AED); }
+    .pdf-attr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+    .pdf-attr { border: 1px solid #E8EBF1; border-left: 3px solid #C7D2FE; border-radius: 8px; padding: 10px 12px; background: #FBFBFE; page-break-inside: avoid; }
+    .pdf-attr.motiv { border-left-color: #6366F1; } .pdf-attr.goal { border-left-color: #0EA5E9; }
+    .pdf-attr.pain { border-left-color: #DC2626; } .pdf-attr.expect { border-left-color: #D97706; } .pdf-attr.emote { border-left-color: #DB2777; }
+    .pdf-attr-list { margin: 5px 0 0; padding-left: 15px; } .pdf-attr-list li { font-size: 11px; color: #1F2937; margin: 2px 0; line-height: 1.45; }
+    .pdf-attr.pain .pdf-attr-list li { color: #B91C1C; }
+    .pdf-sig { border-left: 3px solid #7C3AED; background: #FAFAFE; border-radius: 8px; padding: 10px 12px; margin: 8px 0; page-break-inside: avoid; } .pdf-sig div { font-size: 11px; color: #1F2937; margin-top: 3px; line-height: 1.5; }
+    .pdf-beh-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 8px 0; }
+    .pdf-beh { background: #F7F8FC; border: 1px solid #ECEEF6; border-radius: 8px; padding: 8px 10px; }
+    .pdf-beh-k { display: block; font-size: 9px; text-transform: uppercase; letter-spacing: 0.04em; color: #4F46E5; font-weight: 700; margin-bottom: 3px; } .pdf-beh span:last-child { font-size: 11px; color: #1F2937; line-height: 1.45; }
+    .pdf-channel { display: flex; gap: 8px; align-items: flex-start; background: #F7F8FC; border: 1px solid #ECEEF6; border-radius: 8px; padding: 7px 10px; margin-top: 5px; font-size: 11px; color: #1F2937; }
+    .pdf-channel-rank { flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%; background: linear-gradient(135deg,#5B52F0,#6D28D9); color: #fff; font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
     .pdf-card { border: 1px solid #E5E7EB; border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; page-break-inside: avoid; background: #FCFCFE; }
     .pdf-card-name { font-size: 16px; font-weight: 800; color: #1E1B4B; }
     .pdf-card-sub { font-size: 11px; color: #6366F1; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
@@ -1123,17 +1145,47 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
         }
         html += `<div class="pdf-section"><div class="pdf-h2">Full Persona Cards</div>`;
         full.forEach(p => {
-          html += `<div class="pdf-card"><div class="pdf-persona-head"><span class="pdf-avatar" style="background:${p.pod_flag ? "#0E7A8A" : "#4F46E5"}">${esc(initialsOf(p.name))}</span><div><div class="pdf-card-name">${esc(p.name)}${p.pod_flag ? ' <span class="pdf-pill" style="background:#CFFAFE;color:#0E7490">POD</span>' : ""}</div><div class="pdf-card-sub" style="margin:0">${esc(p.archetype)} · ${esc(p.tier)}${p.segment ? " · " + esc(p.segment) : ""}</div></div></div>`;
-          if (p.identity) html += `<div class="pdf-kv"><span class="pdf-k">Identity</span><span class="pdf-v">${esc(p.identity)}</span></div>`;
-          if (p.quote) html += `<div class="pdf-kv"><span class="pdf-k">In their words</span><span class="pdf-v" style="font-style:italic">${esc(p.quote)}</span></div>`;
-          const arr = (k, label) => (p[k]?.length ? `<div class="pdf-kv"><span class="pdf-k">${label}</span><span class="pdf-v"><ul class="pdf-list">${p[k].map(x => `<li>${esc(x)}</li>`).join("")}</ul></span></div>` : "");
-          html += arr("motivations", "Motivations") + arr("core_needs", "Core Needs") + arr("pain_points", "Pain Points") + arr("design_tensions", "Design Tensions") + arr("key_emotional_drivers", "Emotional Drivers") + arr("benchmark_provenance", "Benchmark Provenance");
-          const kv = (k, label) => (p[k] ? `<div class="pdf-kv"><span class="pdf-k">${label}</span><span class="pdf-v">${esc(p[k])}</span></div>` : "");
-          if (p.emotional_journey_signature) html += `<div class="pdf-kv"><span class="pdf-k">Emotional Journey Signature</span><span class="pdf-v">${esc(p.emotional_journey_signature)}</span></div>`;
-          if (p.spend_profile) html += `<div class="pdf-kv"><span class="pdf-k">Spend Profile</span><span class="pdf-v">${esc(p.spend_profile.aed_range)} · ${esc(p.spend_profile.dwell)} · ${esc(p.spend_profile.engagement)}</span></div>`;
-          html += kv("accessibility_needs", "Accessibility") + kv("cultural_language", "Cultural & Language") + kv("control_sensitivity", "Control Sensitivity") + kv("success_definition", "Success Definition");
-          if (p.strategic_value_detail) html += `<div class="pdf-kv"><span class="pdf-k">Strategic Value</span><span class="pdf-v">Revenue: ${esc(p.strategic_value_detail.revenue)} · Advocacy: ${esc(p.strategic_value_detail.advocacy)} · Loyalty: ${esc(p.strategic_value_detail.loyalty)}</span></div>`;
-          if (p.channel_preferences?.length) html += `<div class="pdf-kv"><span class="pdf-k">Channels (ranked)</span><span class="pdf-v"><ol class="pdf-list">${p.channel_preferences.map(c => `<li><strong>${esc(c.channel)}</strong> — ${esc(c.why)}</li>`).join("")}</ol></span></div>`;
+          html += `<div class="pdf-pcard">`;
+          // Header
+          html += `<div class="pdf-persona-head"><span class="pdf-avatar" style="background:${p.pod_flag ? "#0E7A8A" : "#4F46E5"}">${esc(initialsOf(p.name))}</span><div><div class="pdf-card-name">${esc(p.name)}${p.pod_flag ? ' <span class="pdf-pill" style="background:#CFFAFE;color:#0E7490">POD</span>' : ""}</div><div class="pdf-card-sub" style="margin:0">${esc(p.archetype)} · ${esc(p.tier)}${p.segment ? " · " + esc(p.segment) : ""}</div></div></div>`;
+          // Quote banner
+          if (p.quote) html += `<div class="pdf-quote">“${esc(p.quote.replace(/^"|"$/g, ""))}”</div>`;
+          // Who they are
+          if (p.identity) html += `<div class="pdf-who"><span class="pdf-attr-k">◐ Who They Are</span><div>${esc(p.identity)}</div></div>`;
+          // Meters (2-col)
+          if (p.meters) {
+            const meters = [
+              { k: "Tech Savviness", v: p.meters.tech_savviness },
+              { k: "Price Sensitivity", v: p.meters.price_sensitivity },
+              { k: "Planning Style", v: p.meters.planning_style },
+              { k: "Support Need", v: p.meters.support_need },
+              { k: "Advocacy Potential", v: p.meters.advocacy_potential },
+            ];
+            html += `<div class="pdf-meters">${meters.map(m => `<div class="pdf-meter"><span class="pdf-meter-k">${m.k}</span><span class="pdf-meter-track"><span class="pdf-meter-fill" style="width:${Math.max(0, Math.min(100, m.v || 0))}%"></span></span></div>`).join("")}</div>`;
+          }
+          // Attribute boxes (2-col, colored) — mirrors px-attr grid
+          const attr = (k, label, cls) => (p[k]?.length ? `<div class="pdf-attr ${cls}"><span class="pdf-attr-k">${label}</span><ul class="pdf-attr-list">${p[k].map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : "");
+          html += `<div class="pdf-attr-grid">`;
+          html += attr("motivations", "✦ Motivations", "motiv");
+          html += attr("core_needs", "◎ Core Needs", "goal");
+          html += attr("pain_points", "▲ Pain Points", "pain");
+          html += attr("design_tensions", "⚖ Design Tensions", "expect");
+          html += attr("key_emotional_drivers", "♥ Emotional Drivers", "emote");
+          html += attr("benchmark_provenance", "◈ Benchmark Provenance", "goal");
+          html += `</div>`;
+          // Emotional journey signature
+          if (p.emotional_journey_signature) html += `<div class="pdf-sig"><span class="pdf-attr-k">〰 Emotional Journey Signature</span><div>${esc(p.emotional_journey_signature)}</div></div>`;
+          // Spend profile (3-col)
+          if (p.spend_profile) html += `<div class="pdf-beh-grid"><div class="pdf-beh"><span class="pdf-beh-k">$ Spend Range</span><span>${esc(p.spend_profile.aed_range)}</span></div><div class="pdf-beh"><span class="pdf-beh-k">⏱ Dwell Time</span><span>${esc(p.spend_profile.dwell)}</span></div><div class="pdf-beh"><span class="pdf-beh-k">◉ Engagement</span><span>${esc(p.spend_profile.engagement)}</span></div></div>`;
+          // Behaviour grid
+          const beh = (k, label) => (p[k] ? `<div class="pdf-beh"><span class="pdf-beh-k">${label}</span><span>${esc(p[k])}</span></div>` : "");
+          html += `<div class="pdf-beh-grid">${beh("accessibility_needs", "♿ Accessibility")}${beh("cultural_language", "⚐ Cultural & Language")}${beh("control_sensitivity", "⊘ Control Sensitivity")}</div>`;
+          // Strategic value (3-col)
+          if (p.strategic_value_detail) html += `<div class="pdf-beh-grid"><div class="pdf-beh"><span class="pdf-beh-k">↑ Revenue</span><span>${esc(p.strategic_value_detail.revenue)}</span></div><div class="pdf-beh"><span class="pdf-beh-k">📣 Advocacy</span><span>${esc(p.strategic_value_detail.advocacy)}</span></div><div class="pdf-beh"><span class="pdf-beh-k">♡ Loyalty</span><span>${esc(p.strategic_value_detail.loyalty)}</span></div></div>`;
+          // Success definition
+          if (p.success_definition) html += `<div class="pdf-sig" style="border-left-color:#16A34A"><span class="pdf-attr-k">★ What Success Looks Like</span><div>${esc(p.success_definition)}</div></div>`;
+          // Ranked channels
+          if (p.channel_preferences?.length) html += `<div style="margin-top:8px"><span class="pdf-attr-k">Channel Preferences (ranked)</span>${p.channel_preferences.map(c => `<div class="pdf-channel"><span class="pdf-channel-rank">${esc(String(c.rank))}</span><span><strong>${esc(c.channel)}</strong> — ${esc(c.why)}</span></div>`).join("")}</div>`;
           html += `</div>`;
         });
         html += `</div>`;
