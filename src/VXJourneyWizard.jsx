@@ -3706,7 +3706,7 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
         .sh-tier-badge { font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 20px; }
         .sh-tier-checkbox { border: 1.5px solid #C7CCD8; color: #FFFFFF; margin-top: 1px; }
         .sh-tier-row.checked .sh-tier-checkbox { background: #4F46E5; border-color: #4F46E5; }
-        .sh-panel-title, .sh-fields-title { color: #1E1B4B !important; }
+        .sh-panel-title, .sh-fields-title { color: #FFFFFF !important; font-weight: 700 !important; letter-spacing: 0.07em !important; }
         .sh-panel-count { color: #4F46E5 !important; background: #EEF0FF; }
         .sh-nat-grid { display: flex; flex-wrap: wrap; gap: 7px; }
         .sh-nat-chip {
@@ -4830,31 +4830,116 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                         <div className="sh-fields-body">
                           <div className="sh-field">
                             <label className="sh-field-label">Primary Nationalities</label>
-                            <p className="sh-field-hint">Select the visitor nationalities most relevant to your venue (grouped by region).</p>
-                            <div className="sh-nat-grid">
-                              {[
-                                "United States","United Kingdom","Canada","Germany","France","Italy","Spain","Netherlands",
-                                "UAE","Saudi Arabia","Qatar","Egypt","Türkiye",
-                                "India","China","Japan","South Korea","Singapore","Indonesia","Philippines",
-                                "Australia","New Zealand",
-                                "Brazil","Mexico","South Africa","Nigeria","Kenya","Russia",
-                              ].map((nat) => {
-                                const list = shNationalities ? shNationalities.split(", ").filter(Boolean) : [];
-                                const on = list.includes(nat);
-                                return (
-                                  <div
-                                    key={nat}
-                                    className={`sh-nat-chip ${on ? "on" : ""}`}
-                                    onClick={() => {
-                                      const next = on ? list.filter(n => n !== nat) : [...list, nat];
-                                      setShNationalities(next.join(", "));
-                                    }}
-                                  >
-                                    {on ? "✓ " : ""}{nat}
+                            <p className="sh-field-hint">Click countries on the map to select the visitor nationalities most relevant to your venue. Selections sync exactly as before.</p>
+                            {(() => {
+                              // Country list with equirectangular map coords (viewBox 1000x500) + region.
+                              // Coords derived from lon/lat: x=(lon+180)/360*1000, y=(90-lat)/180*500.
+                              const COUNTRIES = [
+                                { n: "United States", x: 210, y: 178, r: "Americas" },
+                                { n: "Canada", x: 230, y: 135, r: "Americas" },
+                                { n: "Brazil", x: 350, y: 330, r: "Americas" },
+                                { n: "Mexico", x: 195, y: 215, r: "Americas" },
+                                { n: "United Kingdom", x: 490, y: 140, r: "Europe" },
+                                { n: "France", x: 505, y: 155, r: "Europe" },
+                                { n: "Germany", x: 522, y: 145, r: "Europe" },
+                                { n: "Italy", x: 528, y: 165, r: "Europe" },
+                                { n: "Spain", x: 495, y: 168, r: "Europe" },
+                                { n: "Netherlands", x: 515, y: 140, r: "Europe" },
+                                { n: "Russia", x: 660, y: 120, r: "Europe" },
+                                { n: "Türkiye", x: 575, y: 168, r: "MEA" },
+                                { n: "UAE", x: 620, y: 205, r: "GCC" },
+                                { n: "Saudi Arabia", x: 600, y: 205, r: "GCC" },
+                                { n: "Qatar", x: 615, y: 200, r: "GCC" },
+                                { n: "Egypt", x: 575, y: 200, r: "MEA" },
+                                { n: "South Africa", x: 545, y: 390, r: "MEA" },
+                                { n: "Nigeria", x: 515, y: 290, r: "MEA" },
+                                { n: "Kenya", x: 575, y: 305, r: "MEA" },
+                                { n: "India", x: 690, y: 215, r: "APAC" },
+                                { n: "China", x: 760, y: 178, r: "APAC" },
+                                { n: "Japan", x: 845, y: 178, r: "APAC" },
+                                { n: "South Korea", x: 815, y: 180, r: "APAC" },
+                                { n: "Singapore", x: 755, y: 282, r: "APAC" },
+                                { n: "Indonesia", x: 775, y: 295, r: "APAC" },
+                                { n: "Philippines", x: 805, y: 255, r: "APAC" },
+                                { n: "Australia", x: 820, y: 360, r: "APAC" },
+                                { n: "New Zealand", x: 900, y: 395, r: "APAC" },
+                              ];
+                              const REGION_COLOR = { Americas: "#6366F1", Europe: "#4F46E5", GCC: "#0E7490", MEA: "#7C3AED", APAC: "#DB2777" };
+                              const list = shNationalities ? shNationalities.split(", ").filter(Boolean) : [];
+                              const toggle = (n) => {
+                                const on = list.includes(n);
+                                const next = on ? list.filter(x => x !== n) : [...list, n];
+                                setShNationalities(next.join(", "));
+                              };
+                              const toggleRegion = (region) => {
+                                const inRegion = COUNTRIES.filter(c => c.r === region).map(c => c.n);
+                                const allOn = inRegion.every(n => list.includes(n));
+                                const next = allOn ? list.filter(n => !inRegion.includes(n)) : [...new Set([...list, ...inRegion])];
+                                setShNationalities(next.join(", "));
+                              };
+                              const regions = ["Americas", "Europe", "GCC", "MEA", "APAC"];
+                              return (
+                                <div className="sh-map-wrap">
+                                  <div className="sh-region-bar">
+                                    {regions.map(rg => {
+                                      const inR = COUNTRIES.filter(c => c.r === rg).map(c => c.n);
+                                      const cnt = inR.filter(n => list.includes(n)).length;
+                                      return (
+                                        <button key={rg} type="button" className={`sh-region-btn ${cnt > 0 ? "active" : ""}`} onClick={() => toggleRegion(rg)} style={{ "--rg": REGION_COLOR[rg] }}>
+                                          <span className="sh-region-dot" style={{ background: REGION_COLOR[rg] }} />
+                                          {rg}{cnt > 0 ? ` · ${cnt}` : ""}
+                                        </button>
+                                      );
+                                    })}
                                   </div>
-                                );
-                              })}
-                            </div>
+                                  <div className="sh-map">
+                                    <svg viewBox="0 0 1000 500" className="sh-map-svg" preserveAspectRatio="xMidYMid meet">
+                                      <defs>
+                                        <radialGradient id="shGlow" cx="50%" cy="50%" r="50%">
+                                          <stop offset="0%" stopColor="#7C3AED" stopOpacity="0.55" />
+                                          <stop offset="100%" stopColor="#7C3AED" stopOpacity="0" />
+                                        </radialGradient>
+                                      </defs>
+                                      {/* Subtle continent silhouette (stylised landmasses) */}
+                                      <g className="sh-map-land">
+                                        <path d="M150,110 L290,110 L300,170 L250,250 L210,250 L160,200 Z" />
+                                        <path d="M300,270 L380,260 L400,360 L330,420 L320,330 Z" />
+                                        <path d="M470,120 L560,115 L590,175 L545,205 L500,200 L475,160 Z" />
+                                        <path d="M560,185 L640,195 L660,260 L600,400 L545,400 L560,300 L545,230 Z" />
+                                        <path d="M650,120 L890,120 L880,200 L770,210 L690,205 L660,170 Z" />
+                                        <path d="M740,260 L830,250 L860,330 L770,320 Z" />
+                                        <path d="M790,340 L880,345 L885,400 L810,395 Z" />
+                                      </g>
+                                      {/* Region connection lines for selected (subtle network feel) */}
+                                      {regions.map(rg => {
+                                        const pts = COUNTRIES.filter(c => c.r === rg && list.includes(c.n));
+                                        if (pts.length < 2) return null;
+                                        return pts.slice(1).map((p, i) => (
+                                          <line key={rg + i} x1={pts[0].x} y1={pts[0].y} x2={p.x} y2={p.y} stroke={REGION_COLOR[rg]} strokeWidth="1" strokeOpacity="0.35" strokeDasharray="3 3" />
+                                        ));
+                                      })}
+                                      {/* Country markers */}
+                                      {COUNTRIES.map(c => {
+                                        const on = list.includes(c.n);
+                                        return (
+                                          <g key={c.n} className="sh-node" onClick={() => toggle(c.n)} style={{ cursor: "pointer" }}>
+                                            {on && <circle cx={c.x} cy={c.y} r="18" fill="url(#shGlow)" />}
+                                            <circle cx={c.x} cy={c.y} r={on ? 7 : 5} fill={on ? REGION_COLOR[c.r] : "#FFFFFF"} stroke={on ? "#FFFFFF" : REGION_COLOR[c.r]} strokeWidth={on ? 2 : 1.5} className="sh-node-dot" />
+                                            <text x={c.x} y={c.y - 12} textAnchor="middle" className={`sh-node-label ${on ? "on" : ""}`}>{c.n}</text>
+                                          </g>
+                                        );
+                                      })}
+                                    </svg>
+                                  </div>
+                                  <div className="sh-map-selected">
+                                    <span className="sh-map-sel-k">Selected ({list.length}):</span>
+                                    {list.length ? list.map(n => (
+                                      <span key={n} className="sh-map-sel-chip" onClick={() => toggle(n)}>{n} <span className="sh-map-sel-x">×</span></span>
+                                    )) : <span className="sh-map-sel-empty">None yet — click the map or a region above.</span>}
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
                           <div className="sh-field">
                             <label className="sh-field-label">Religious Considerations</label>
