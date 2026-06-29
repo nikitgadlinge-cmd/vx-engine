@@ -4896,19 +4896,33 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                                     <svg viewBox="0 0 1000 500" className="sh-map-svg" preserveAspectRatio="xMidYMid meet">
                                       <defs>
                                         <radialGradient id="shGlow" cx="50%" cy="50%" r="50%">
-                                          <stop offset="0%" stopColor="#7C3AED" stopOpacity="0.55" />
+                                          <stop offset="0%" stopColor="#7C3AED" stopOpacity="0.30" />
                                           <stop offset="100%" stopColor="#7C3AED" stopOpacity="0" />
                                         </radialGradient>
                                       </defs>
-                                      {/* Subtle continent silhouette (stylised landmasses) */}
+                                      {/* Faint lat/long grid for a clean intelligence-map feel */}
+                                      <g className="sh-map-grid">
+                                        {[125, 250, 375].map(y => <line key={"h" + y} x1="0" y1={y} x2="1000" y2={y} />)}
+                                        {[200, 400, 600, 800].map(x => <line key={"v" + x} x1={x} y1="0" x2={x} y2="500" />)}
+                                      </g>
+                                      {/* Recognizable simplified continents (equirectangular, 1000x500) */}
                                       <g className="sh-map-land">
-                                        <path d="M150,110 L290,110 L300,170 L250,250 L210,250 L160,200 Z" />
-                                        <path d="M300,270 L380,260 L400,360 L330,420 L320,330 Z" />
-                                        <path d="M470,120 L560,115 L590,175 L545,205 L500,200 L475,160 Z" />
-                                        <path d="M560,185 L640,195 L660,260 L600,400 L545,400 L560,300 L545,230 Z" />
-                                        <path d="M650,120 L890,120 L880,200 L770,210 L690,205 L660,170 Z" />
-                                        <path d="M740,260 L830,250 L860,330 L770,320 Z" />
-                                        <path d="M790,340 L880,345 L885,400 L810,395 Z" />
+                                        {/* North America */}
+                                        <path d="M150,95 Q210,80 255,95 L268,120 L250,140 L262,150 L240,175 L255,195 L225,205 L215,235 L200,215 L205,185 L182,165 L190,140 L160,135 L150,110 Z" />
+                                        {/* Central America */}
+                                        <path d="M205,215 L228,225 L245,255 L235,262 L218,240 L205,228 Z" />
+                                        {/* South America */}
+                                        <path d="M315,265 L360,258 L378,285 L372,330 L350,390 L330,410 L322,360 L335,320 L318,290 Z" />
+                                        {/* Europe */}
+                                        <path d="M475,120 L520,112 L555,120 L548,140 L560,150 L535,165 L548,178 L505,180 L490,165 L500,148 L478,148 Z" />
+                                        {/* Africa */}
+                                        <path d="M505,185 L560,180 L590,195 L600,230 L582,290 L560,340 L535,385 L515,360 L520,300 L500,255 L498,215 Z" />
+                                        {/* Asia */}
+                                        <path d="M560,118 L660,100 L780,108 L870,120 L885,150 L840,165 L800,160 L815,185 L775,200 L740,185 L710,200 L688,185 L660,200 L632,185 L610,195 L600,165 L575,160 L585,135 Z" />
+                                        {/* SE Asia / Indonesia */}
+                                        <path d="M745,265 L800,258 L815,278 L788,300 L760,292 L750,278 Z" />
+                                        {/* Australia */}
+                                        <path d="M788,335 L855,330 L872,365 L835,388 L800,378 L792,355 Z" />
                                       </g>
                                       {/* Region connection lines for selected (subtle network feel) */}
                                       {regions.map(rg => {
@@ -4923,9 +4937,9 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
                                         const on = list.includes(c.n);
                                         return (
                                           <g key={c.n} className="sh-node" onClick={() => toggle(c.n)} style={{ cursor: "pointer" }}>
-                                            {on && <circle cx={c.x} cy={c.y} r="18" fill="url(#shGlow)" />}
-                                            <circle cx={c.x} cy={c.y} r={on ? 7 : 5} fill={on ? REGION_COLOR[c.r] : "#FFFFFF"} stroke={on ? "#FFFFFF" : REGION_COLOR[c.r]} strokeWidth={on ? 2 : 1.5} className="sh-node-dot" />
-                                            <text x={c.x} y={c.y - 12} textAnchor="middle" className={`sh-node-label ${on ? "on" : ""}`}>{c.n}</text>
+                                            {on && <circle cx={c.x} cy={c.y} r="16" fill="url(#shGlow)" />}
+                                            <circle cx={c.x} cy={c.y} r={on ? 6.5 : 4.5} fill={on ? REGION_COLOR[c.r] : "#FFFFFF"} stroke={REGION_COLOR[c.r]} strokeWidth={on ? 2 : 1.6} className="sh-node-dot" />
+                                            <text x={c.x} y={c.y - 11} textAnchor="middle" className={`sh-node-label ${on ? "on" : ""}`}>{c.n}</text>
                                           </g>
                                         );
                                       })}
