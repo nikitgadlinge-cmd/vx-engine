@@ -761,20 +761,21 @@ html, body { height: 100%; overflow: hidden; }   /* page itself never scrolls */
 .sh-region-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 .sh-map {
   position: relative; width: 100%; border-radius: 12px; overflow: hidden;
-  background: radial-gradient(circle at 50% 40%, #1B1840 0%, #12102E 60%, #0C0A22 100%);
-  border: 1px solid #2A2750;
+  background: linear-gradient(170deg, #F4F7FE 0%, #EEF1FB 100%);
+  border: 1px solid #E1E5F0;
 }
 .sh-map-svg { display: block; width: 100%; height: auto; }
-.sh-map-land path { fill: #2A2A52; stroke: #3A3A6B; stroke-width: 0.6; opacity: 0.55; }
+.sh-map-land path { fill: #DDE3F2; stroke: #C8D0E6; stroke-width: 0.5; }
+.sh-map-grid line { stroke: #E5E9F4; stroke-width: 0.4; }
 .sh-node-dot { transition: r 0.15s ease, fill 0.15s ease; }
-.sh-node:hover .sh-node-dot { r: 8; filter: drop-shadow(0 0 4px rgba(124,58,237,0.8)); }
+.sh-node:hover .sh-node-dot { filter: drop-shadow(0 0 4px rgba(124,58,237,0.7)); }
 .sh-node-label {
-  fill: #C7C9E8; font-size: 10px; font-weight: 600; opacity: 0;
+  fill: #475569; font-size: 9px; font-weight: 600; opacity: 0;
   transition: opacity 0.15s ease; pointer-events: none; paint-order: stroke;
-  stroke: #0C0A22; stroke-width: 2.5px;
+  stroke: #F4F7FE; stroke-width: 2.5px;
 }
 .sh-node:hover .sh-node-label { opacity: 1; }
-.sh-node-label.on { opacity: 1; fill: #FFFFFF; }
+.sh-node-label.on { opacity: 1; fill: #312E81; }
 .sh-map-selected { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
 .sh-map-sel-k { font-size: 11px; font-weight: 700; color: #4F46E5; text-transform: uppercase; letter-spacing: 0.04em; }
 .sh-map-sel-chip {
