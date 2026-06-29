@@ -941,6 +941,21 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
     table.pdf-jgrid { margin-bottom: 14px; }
     table.pdf-jgrid td, table.pdf-jgrid th { font-size: 10px; vertical-align: top; }
     ol.pdf-list { margin: 4px 0; padding-left: 18px; } ol.pdf-list li { font-size: 12px; color: #1F2937; margin: 3px 0; }
+    /* Journey map grid — mirrors the live wizard */
+    table.pdf-jmap { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 10px; }
+    table.pdf-jmap th, table.pdf-jmap td { border: 1px solid #E5E7EB; padding: 7px 8px; font-size: 9.5px; vertical-align: top; word-wrap: break-word; overflow-wrap: anywhere; }
+    .jm-corner { background: #1E1B3A; color: #fff; text-align: left; font-weight: 700; }
+    .jm-colhead { background: #5B52F0; color: #fff; text-align: center; font-weight: 700; font-size: 10px; }
+    .jm-rowlabel { background: #F5F6FB; font-weight: 700; color: #312E81; text-transform: uppercase; letter-spacing: 0.03em; font-size: 8.5px; }
+    .jm-ul { margin: 0; padding-left: 13px; } .jm-ul li { margin: 1px 0; }
+    .jm-ul.pain li { color: #B91C1C; } .jm-ul.opp li { color: #15803D; }
+    .jm-chip { display: inline-block; background: #EEF0FF; border: 1px solid #D9DBFA; color: #4338CA; font-size: 8px; padding: 1px 6px; border-radius: 9px; margin: 1px 2px 1px 0; }
+    .jm-chip.mot { background: #FEF3C7; border-color: #FCD34D; color: #92400E; font-weight: 700; }
+    .jm-curve-cell { background: #FBFBFE; padding: 6px 8px; }
+    .jm-curve-svg { display: block; width: 100%; height: 48px; }
+    table.jm-emotline { width: 100%; border-collapse: collapse; margin-top: 2px; } table.jm-emotline td { border: none; text-align: center; font-size: 9px; font-weight: 700; color: #6D28D9; padding: 1px; }
+    .jm-mottag { display: inline-block; font-size: 7.5px; font-weight: 700; letter-spacing: 0.04em; padding: 1px 6px; border-radius: 9px; margin: 1px 2px 1px 0; }
+    .jm-key { font-size: 9px; color: #6B7280; margin: 4px 0 6px; }
     .pdf-card { border: 1px solid #E5E7EB; border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; page-break-inside: avoid; background: #FCFCFE; }
     .pdf-card-name { font-size: 16px; font-weight: 800; color: #1E1B4B; }
     .pdf-card-sub { font-size: 11px; color: #6366F1; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
@@ -1145,55 +1160,45 @@ where TP = { "name": str, "stage": str, "channel": str, "emotion": str, "pain_le
     setPdfBusy("journey");
     try {
       const STAGE_LABELS = { pre_visit: "Pre-Visit", arrival: "Arrival", core_experience: "Core Experience", exit_departure: "Exit & Departure", post_visit: "Post-Visit" };
-      const barColor = (lvl, invert) => (invert ? (lvl === "High" ? "#16A34A" : lvl === "Med" ? "#D97706" : "#94A3B8") : (lvl === "High" ? "#DC2626" : lvl === "Med" ? "#D97706" : "#16A34A"));
       let html = `<div class="pdf-head"><div class="pdf-eyebrow">Stage 4 Output</div><div class="pdf-title">Journey Maps, Moments of Truth & KPIs</div><div class="pdf-sub">${journeyData.journeys.length} persona journeys</div></div>`;
-      html += `<div class="pdf-legend"><div><strong>Pain</strong> — how frustrating the step is (lower is better)</div><div><strong>Delight</strong> — how positive it feels (higher is better)</div><div><strong>Risk</strong> — chance it goes wrong (lower is better)</div><div><strong>Access. Barrier</strong> — difficulty for accessibility needs (lower is better)</div><div><strong>Ops Effort</strong> — staff effort to run it well (lower is easier)</div><div><strong>Priority</strong> — how important to get right (higher = focus here)</div></div>`;
+      const motTag = { Risk: { l: "RISK", c: "#B91C1C", bg: "#FEE2E2" }, Conversion: { l: "CONV", c: "#1D4ED8", bg: "#DBEAFE" }, Delight: { l: "DELIGHT", c: "#15803D", bg: "#DCFCE7" }, Loyalty: { l: "LOYALTY", c: "#6D28D9", bg: "#EDE9FE" } };
+      const gridStages = Object.keys(STAGE_LABELS);
       journeyData.journeys.forEach(j => {
-        html += `<div class="pdf-section"><div class="pdf-h2">${esc(j.persona_name)} — Journey Map</div>`;
+        html += `<div class="pdf-section" style="page-break-after:always"><div class="pdf-h2">${esc(j.persona_name)} — Journey Map</div>`;
 
-        // Horizontal McKinsey-style grid summary (Goal / Emotion / MoTs per stage)
-        const gridStages = Object.keys(STAGE_LABELS);
+        // MoTs grouped by stage (match by stage label)
         const motByStage = {};
-        (j.moments_of_truth || []).forEach(m => { const k = (m.stage||"").toLowerCase().replace(/[^a-z]/g,""); (motByStage[k] = motByStage[k]||[]).push(m); });
-        const motTag = { Risk:"#B91C1C", Conversion:"#1D4ED8", Delight:"#15803D", Loyalty:"#6D28D9" };
-        html += `<table class="pdf-tbl pdf-jgrid"><tr><th>Stage</th>${gridStages.map(sk=>`<th>${esc(STAGE_LABELS[sk])}</th>`).join("")}</tr>`;
-        html += `<tr><td><strong>Persona Goal</strong></td>${gridStages.map(sk=>`<td>${esc(j.stages?.[sk]?.persona_goal||"—")}</td>`).join("")}</tr>`;
-        html += `<tr><td><strong>Emotion</strong></td>${gridStages.map(sk=>{const s=j.stages?.[sk];return `<td>${esc(s?.emotion_label||"—")} ${s?.avg_sentiment!=null?`(${Math.round((s.avg_sentiment)/10)}/10)`:""}</td>`;}).join("")}</tr>`;
-        html += `<tr><td><strong>Moments of Truth</strong></td>${gridStages.map(sk=>{const ms=motByStage[STAGE_LABELS[sk].toLowerCase().replace(/[^a-z]/g,"")]||[];return `<td>${ms.length?ms.map(m=>`<span class="pdf-pill" style="background:${(motTag[m.mot_type]||"#6B7280")}22;color:${motTag[m.mot_type]||"#6B7280"}">${esc(m.mot_type||"")}</span>`).join(" "):"—"}</td>`;}).join("")}</tr>`;
+        (j.moments_of_truth || []).forEach(m => { const k = (m.stage || "").toLowerCase().replace(/[^a-z]/g, ""); (motByStage[k] = motByStage[k] || []).push(m); });
+        const stageMots = (sk) => motByStage[STAGE_LABELS[sk].toLowerCase().replace(/[^a-z]/g, "")] || [];
+
+        // Emotional curve across the 5 stages (one flowing line, like the live UI)
+        const pts = gridStages.map(sk => j.stages?.[sk]?.avg_sentiment ?? 50);
+        const W = 100, H = 26;
+        const xy = pts.map((v, i) => [(i / (gridStages.length - 1)) * W, H - (v / 100) * H]);
+        const cpath = xy.map((q, i) => `${i === 0 ? "M" : "L"}${q[0].toFixed(1)},${q[1].toFixed(1)}`).join(" ");
+        const carea = `${cpath} L${W},${H} L0,${H} Z`;
+
+        // The horizontal McKinsey grid — mirrors the live wizard exactly
+        html += `<table class="pdf-jmap"><colgroup><col style="width:13%"/><col/><col/><col/><col/><col/></colgroup>`;
+        // Header
+        html += `<tr><th class="jm-corner">Journey Stage</th>${gridStages.map(sk => `<th class="jm-colhead">${esc(STAGE_LABELS[sk])}</th>`).join("")}</tr>`;
+        // Persona Goal
+        html += `<tr><td class="jm-rowlabel">Persona Goal</td>${gridStages.map(sk => `<td>${esc(j.stages?.[sk]?.persona_goal || "—")}</td>`).join("")}</tr>`;
+        // Key Actions
+        html += `<tr><td class="jm-rowlabel">Key Actions</td>${gridStages.map(sk => { const a = j.stages?.[sk]?.key_actions || []; return `<td>${a.length ? `<ul class="jm-ul">${a.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "—"}</td>`; }).join("")}</tr>`;
+        // Touchpoints (chips, ★ on MoT)
+        html += `<tr><td class="jm-rowlabel">Touchpoints</td>${gridStages.map(sk => { const t = j.stages?.[sk]?.touchpoints || []; return `<td>${t.map(tp => `<span class="jm-chip${tp.mot_flag ? " mot" : ""}">${tp.mot_flag ? "★ " : ""}${esc(tp.name)}</span>`).join(" ")}</td>`; }).join("")}</tr>`;
+        // Emotional Curve — single row spanning all 5 stage columns
+        html += `<tr><td class="jm-rowlabel">Emotional Curve</td><td colspan="5" class="jm-curve-cell"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" class="jm-curve-svg"><defs><linearGradient id="cg_${esc(j.persona_id)}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7C3AED" stop-opacity="0.22"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="0.02"/></linearGradient></defs><path d="${carea}" fill="url(#cg_${esc(j.persona_id)})"/><path d="${cpath}" fill="none" stroke="#6D28D9" stroke-width="1.4" vector-effect="non-scaling-stroke"/>${xy.map(q => `<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="1.6" fill="#6D28D9" vector-effect="non-scaling-stroke"/>`).join("")}</svg><table class="jm-emotline"><tr>${gridStages.map(sk => `<td>${esc(j.stages?.[sk]?.emotion_label || "—")}</td>`).join("")}</tr></table></td></tr>`;
+        // Pain Points
+        html += `<tr><td class="jm-rowlabel">Pain Points</td>${gridStages.map(sk => { const pp = j.stages?.[sk]?.pain_points || []; return `<td>${pp.length ? `<ul class="jm-ul pain">${pp.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "—"}</td>`; }).join("")}</tr>`;
+        // Moments of Truth — color tags
+        html += `<tr><td class="jm-rowlabel">Moments of Truth</td>${gridStages.map(sk => { const ms = stageMots(sk); return `<td>${ms.length ? ms.map(m => { const t = motTag[m.mot_type] || { l: m.mot_type || "", c: "#6B7280", bg: "#F3F4F6" }; return `<span class="jm-mottag" style="background:${t.bg};color:${t.c}">${t.l}</span>`; }).join(" ") : "—"}</td>`; }).join("")}</tr>`;
+        // Opportunities
+        html += `<tr><td class="jm-rowlabel">Opportunities</td>${gridStages.map(sk => { const o = j.stages?.[sk]?.opportunities || []; return `<td>${o.length ? `<ul class="jm-ul opp">${o.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "—"}</td>`; }).join("")}</tr>`;
         html += `</table>`;
+        html += `<div class="jm-key"><strong>MoT tags:</strong> <span class="jm-mottag" style="background:#FEE2E2;color:#B91C1C">RISK</span> <span class="jm-mottag" style="background:#DBEAFE;color:#1D4ED8">CONV</span> <span class="jm-mottag" style="background:#DCFCE7;color:#15803D">DELIGHT</span> <span class="jm-mottag" style="background:#EDE9FE;color:#6D28D9">LOYALTY</span></div>`;
 
-        Object.keys(STAGE_LABELS).forEach(sk => {
-          const st = j.stages?.[sk];
-          if (!st) return;
-          html += `<div class="pdf-card"><div class="pdf-card-sub">${esc(STAGE_LABELS[sk])}</div>`;
-          if (st.summary) html += `<div class="pdf-v" style="margin-bottom:8px">${esc(st.summary)}</div>`;
-
-          // Emotional curve for this stage
-          const tps = st.touchpoints || [];
-          if (tps.some(t => t.sentiment != null)) {
-            const pts = tps.map(t => t.sentiment ?? 50);
-            const n = pts.length, W = 100, H = 40;
-            const xy = pts.map((s, i) => [n === 1 ? W / 2 : (i / (n - 1)) * W, H - (s / 100) * H]);
-            const path = xy.map((p, i) => `${i === 0 ? "M" : "L"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
-            const area = `${path} L${W},${H} L0,${H} Z`;
-            html += `<div class="pdf-curve"><div class="pdf-curve-title">Emotional Curve</div><div class="pdf-curve-sub">How the visitor feels across this stage — peaks are delight, dips are friction</div>`;
-            html += `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><defs><linearGradient id="g_${j.persona_id}_${sk}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7C3AED" stop-opacity="0.28"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="0.03"/></linearGradient></defs>`;
-            html += `<path d="${area}" fill="url(#g_${j.persona_id}_${sk})"/><path d="${path}" fill="none" stroke="#6D28D9" stroke-width="1.4" vector-effect="non-scaling-stroke"/>`;
-            html += xy.map(p => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="1.8" fill="#6D28D9" vector-effect="non-scaling-stroke"/>`).join("");
-            html += `</svg><div class="pdf-curve-labels">${tps.map(t => `<span class="pdf-curve-lbl">${esc(t.name)}</span>`).join("")}</div></div>`;
-          }
-
-          tps.forEach(tp => {
-            html += `<div class="pdf-tp"><div><span class="pdf-tp-name">${esc(tp.name)}</span><span class="pdf-tp-channel">${esc(tp.channel)}</span></div>`;
-            if (tp.emotion_line || tp.emotion) html += `<div class="pdf-tp-line">${esc(tp.emotion_line || tp.emotion)}</div>`;
-            const bar = (label, n, invert) => { const lvl = HML(n); const c = barColor(lvl, invert); return `<div class="pdf-bar-row"><span class="pdf-bar-k">${label}</span><span class="pdf-bar-track"><span class="pdf-bar-fill" style="width:${hmlPct(lvl)}%;background:${c}"></span></span><span class="pdf-bar-v" style="color:${c}">${lvl}</span></div>`; };
-            html += `<div class="pdf-bar-grid">`;
-            html += bar("Pain", tp.pain_level) + bar("Delight", tp.delight_level, true) + bar("Risk", tp.risk_level) + bar("Access. Barrier", tp.accessibility_impact) + bar("Ops Effort", tp.operational_complexity);
-            html += `<div class="pdf-bar-row"><span class="pdf-bar-k">Priority</span><span class="pdf-bar-track"><span class="pdf-bar-fill" style="width:${hmlPct(HML(tp.priority_score))}%;background:#4F46E5"></span></span><span class="pdf-bar-v" style="color:#4F46E5">${HML(tp.priority_score)}</span></div>`;
-            html += `</div></div>`;
-          });
-          html += `</div>`;
-        });
         const mots = j.moments_of_truth || [];
         if (mots.length) {
           html += `<div class="pdf-h2">Moments of Truth (persona-specific)</div>`;
