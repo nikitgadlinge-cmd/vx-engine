@@ -743,3 +743,44 @@ html, body { height: 100%; overflow: hidden; }   /* page itself never scrolls */
 .jm-kpi-tierseg.good { background: #FEF3C7; color: #92400E; }
 .jm-kpi-tierseg.wc { background: #DCFCE7; color: #15803D; }
 .jm-kpi-escalation { margin-top: 8px; font-size: 10.5px; color: #B45309; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 6px; padding: 5px 9px; }
+
+/* ============================================================
+   STAKEHOLDER PROFILING — INTERACTIVE WORLD MAP (Audience Profile)
+   Front-end only; selection still writes to shNationalities string.
+   ============================================================ */
+.sh-map-wrap { margin-top: 6px; }
+.sh-region-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.sh-region-btn {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  font-size: 11px; font-weight: 600; color: #475569;
+  background: #F7F8FC; border: 1px solid #E1E5EE; border-radius: 999px;
+  padding: 4px 11px; transition: all 0.2s ease;
+}
+.sh-region-btn:hover { border-color: var(--rg); color: #1A2B49; background: #F0F2FA; }
+.sh-region-btn.active { border-color: var(--rg); color: #1A2B49; background: #fff; box-shadow: 0 0 0 1px var(--rg) inset; }
+.sh-region-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.sh-map {
+  position: relative; width: 100%; border-radius: 12px; overflow: hidden;
+  background: radial-gradient(circle at 50% 40%, #1B1840 0%, #12102E 60%, #0C0A22 100%);
+  border: 1px solid #2A2750;
+}
+.sh-map-svg { display: block; width: 100%; height: auto; }
+.sh-map-land path { fill: #2A2A52; stroke: #3A3A6B; stroke-width: 0.6; opacity: 0.55; }
+.sh-node-dot { transition: r 0.15s ease, fill 0.15s ease; }
+.sh-node:hover .sh-node-dot { r: 8; filter: drop-shadow(0 0 4px rgba(124,58,237,0.8)); }
+.sh-node-label {
+  fill: #C7C9E8; font-size: 10px; font-weight: 600; opacity: 0;
+  transition: opacity 0.15s ease; pointer-events: none; paint-order: stroke;
+  stroke: #0C0A22; stroke-width: 2.5px;
+}
+.sh-node:hover .sh-node-label { opacity: 1; }
+.sh-node-label.on { opacity: 1; fill: #FFFFFF; }
+.sh-map-selected { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
+.sh-map-sel-k { font-size: 11px; font-weight: 700; color: #4F46E5; text-transform: uppercase; letter-spacing: 0.04em; }
+.sh-map-sel-chip {
+  font-size: 11px; cursor: pointer; background: #EEF0FF; border: 1px solid #C7CCF5;
+  color: #312E81; border-radius: 999px; padding: 3px 9px; transition: all 0.15s;
+}
+.sh-map-sel-chip:hover { background: #FEE2E2; border-color: #FCA5A5; color: #B91C1C; }
+.sh-map-sel-x { font-weight: 700; }
+.sh-map-sel-empty { font-size: 11px; color: #94A3B8; font-style: italic; }
