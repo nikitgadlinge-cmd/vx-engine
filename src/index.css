@@ -733,3 +733,13 @@ html, body { height: 100%; overflow: hidden; }   /* page itself never scrolls */
 
 /* MoT-flagged touchpoint chips in the journey grid */
 .jmap-chip.mot { background: #FEF3C7; border-color: #FCD34D; color: #92400E; font-weight: 600; }
+
+/* Persona-specific MoT interventions + KPI tier bar (Part 2 UI) */
+.jm-mot-interventions { margin: 4px 0 0; padding-left: 18px; }
+.jm-mot-interventions li { margin: 3px 0; line-height: 1.45; }
+.jm-kpi-tierbar { display: flex; gap: 4px; margin: 8px 0 2px; }
+.jm-kpi-tierseg { flex: 1; font-size: 9.5px; font-weight: 600; text-align: center; padding: 3px 4px; border-radius: 4px; }
+.jm-kpi-tierseg.min { background: #FEE2E2; color: #B91C1C; }
+.jm-kpi-tierseg.good { background: #FEF3C7; color: #92400E; }
+.jm-kpi-tierseg.wc { background: #DCFCE7; color: #15803D; }
+.jm-kpi-escalation { margin-top: 8px; font-size: 10.5px; color: #B45309; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 6px; padding: 5px 9px; }
